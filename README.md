@@ -1,1 +1,5 @@
-# nonlinear
+![1](https://github.com/user-attachments/assets/92012311-b03f-41a6-b123-ead1847a7811)
+![2](https://github.com/user-attachments/assets/8a97a930-ff64-400e-94c8-4f03a8587c87)
+![3](https://github.com/user-attachments/assets/a83fbde8-7a73-47c9-b73f-5e3b00842a65)
+![4](https://github.com/user-attachments/assets/07b4275b-2f5b-4b87-834e-18bb51df8bbb)
+![5](https://github.com/user-attachments/assets/7e2c8b4f-1e98-4b58-955a-878e225fadcd)
