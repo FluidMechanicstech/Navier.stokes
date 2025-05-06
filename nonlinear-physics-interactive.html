@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비선형 물리학 방정식 시각화 도구</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #f5f5f5;
+            --dark: #333;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--light);
+            color: var(--dark);
+        }
+        
+        h1, h2, h3 {
+            color: var(--primary);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .category {
+            background-color: #fff;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .equation {
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid var(--primary);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .visualization {
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        
+        #phase-space {
+            width: 100%;
+            height: 400px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            position: relative;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .parameter-slider {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        select, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .highlight {
+            background-color: rgba(46, 204, 113, 0.2);
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .warning {
+            background-color: rgba(243, 156, 18, 0.2);
+            border-left: 4px solid var(--warning);
+        }
+        
+        .point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.7);
+            z-index: 10;
+        }
+        
+        .vector {
+            position: absolute;
+            background-color: rgba(231, 76, 60, 0.6);
+            height: 2px;
+            transform-origin: 0 0;
+        }
+        
+        .axis {
+            position: absolute;
+            background-color: #888;
+            z-index: 1;
+        }
+        
+        .x-axis {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            left: 0;
+        }
+        
+        .y-axis {
+            width: 1px;
+            height: 100%;
+            top: 0;
+            left: 50%;
+        }
+        
+        .axis-label {
+            position: absolute;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .trace {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background-color: rgba(52, 152, 219, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.1s ease-in-out;
+        }
+        
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        button {
+            padding: 8px 16px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>비선형 물리학 방정식 시각화 도구</h1>
+        <p>다양한 물리학 분야의 비선형 방정식을 상호작용적으로 탐색하세요. 위상 공간에서 드래그하여 시스템 동작을 확인할 수 있습니다.</p>
+    </div>
+    
+    <div class="visualization">
+        <h2>위상 공간 시각화</h2>
+        
+        <div class="control-panel">
+            <div class="parameter-slider">
+                <label for="equation-select">방정식 선택:</label>
+                <select id="equation-select">
+                    <optgroup label="역학 분야">
+                        <option value="pendulum">비선형 진자 (d²θ/dt² + (g/L)sin(θ) = 0)</option>
+                        <option value="duffing" selected>더핑 진동자 (F = -kx - αx³ - βẋ + γcos(ωt))</option>
+                        <option value="lorenz">로렌츠 시스템 (카오스 방정식)</option>
+                    </optgroup>
+                    <optgroup label="전자기학 분야">
+                        <option value="maxwell">비선형 맥스웰 방정식</option>
+                        <option value="kerr">커 효과 방정식</option>
+                        <option value="josephson">조셉슨 접합 방정식 (I = Ic·sin(φ))</option>
+                    </optgroup>
+                    <optgroup label="양자역학 분야">
+                        <option value="nlse">비선형 슈뢰딩거 방정식</option>
+                        <option value="kg">비선형 클라인-고든 방정식</option>
+                        <option value="soliton">솔리톤 방정식</option>
+                    </optgroup>
+                    <optgroup label="상대성이론 분야">
+                        <option value="einstein">아인슈타인 중력장 방정식</option>
+                        <option value="geodesic">비선형 측지선 방정식</option>
+                        <option value="schwarzschild">슈바르츠실드 해의 비선형성</option>
+                    </optgroup>
+                    <optgroup label="통계역학과 열역학">
+                        <option value="phasetransition">비선형 상전이 방정식</option>
+                        <option value="diffusion">비선형 확산 방정식</option>
+                        <option value="vanderwaals">반데르발스 방정식 ((P + a/V²)(V - b) = RT)</option>
+                    </optgroup>
+                    <optgroup label="응집물질물리학">
+                        <option value="nlwave">비선형 파동 방정식</option>
+                        <option value="gl">긴즈버그-란다우 방정식</option>
+                        <option value="bcs">BCS 이론의 비선형 갭 방정식</option>
+                    </optgroup>
+                    <optgroup label="광학 분야">
+                        <option value="nlrefraction">비선형 굴절률 방정식 (n = n₀ + n₂I)</option>
+                        <option value="wavemixing">비선형 파동 혼합 방정식</option>
+                        <option value="raman">라만 산란 방정식</option>
+                    </optgroup>
+                    <optgroup label="플라즈마 물리학">
+                        <option value="mhd">자기유체역학(MHD) 방정식</option>
+                        <option value="vlasov">블라소프 방정식</option>
+                        <option value="landau">비선형 란다우 감쇠</option>
+                    </optgroup>
+                    <optgroup label="생물물리학">
+                        <option value="hh">호지킨-헉슬리 뉴런 모델</option>
+                        <option value="fn">피츠휴-나구모 모델</option>
+                        <option value="lotka">포식자-피식자 방정식 (로트카-볼테라)</option>
+                    </optgroup>
+                    <optgroup label="천체물리학">
+                        <option value="stellar">항성 구조 방정식</option>
+                        <option value="gravitational">비선형 중력파 방정식</option>
+                    </optgroup>
+                </select>
+            </div>
+            
+            <div class="parameter-slider">
+                <label for="k-param">k (강성계수): <span id="k-value">1.5</span></label>
+                <input type="range" id="k-param" min="0" max="5" step="0.1" value="1.5">
+            </div>
+            
+            <div class="parameter-slider">
+                <label for="alpha-param">α (비선형성): <span id="alpha-value">1.2</span></label>
+                <input type="range" id="alpha-param" min="0" max="5" step="0.1" value="1.2">
+            </div>
+            
+            <div class="parameter-slider">
+                <label for="beta-param">β (감쇠계수): <span id="beta-value">0.2</span></label>
+                <input type="range" id="beta-param" min="0" max="2" step="0.1" value="0.2">
+            </div>
+            
+            <div class="parameter-slider">
+                <label for="gamma-param">γ (외력 크기): <span id="gamma-value">0.8</span></label>
+                <input type="range" id="gamma-param" min="0" max="2" step="0.1" value="0.8">
+            </div>
+        </div>
+        
+        <div id="phase-space">
+            <div class="x-axis axis"></div>
+            <div class="y-axis axis"></div>
+            <div class="axis-label" style="bottom: 5px; right: 5px;">x (위치)</div>
+            <div class="axis-label" style="top: 5px; left: 5px;">ẋ (속도)</div>
+            <div class="axis-label" style="top: 50%; left: 15px; transform: translateY(-50%);">이 영역을 클릭하거나 드래그하세요</div>
+            <div class="point" id="main-point"></div>
+        </div>
+        
+        <div class="control-panel">
+            <button id="start-btn">시뮬레이션 시작</button>
+            <button id="reset-btn">초기화</button>
+            <button id="clear-traces-btn">궤적 지우기</button>
+        </div>
+        
+        <div class="info-panel">
+            <h3>현재 시스템 정보</h3>
+            <p id="equation-display">F = -kx - αx³ - βẋ + γcos(ωt)</p>
+            <p>위치 (x): <span id="x-value">0</span></p>
+            <p>속도 (ẋ): <span id="v-value">0</span></p>
+            <p>가속도 (ẍ): <span id="a-value">0</span></p>
+            <p>순간변화율 / 관성항 비율 (R): <span id="r-value">0</span></p>
+            <p>시스템 상태: <span id="system-state">안정</span></p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>역학 분야</h2>
+        
+        <div class="equation highlight">
+            <h3>비선형 진자 방정식</h3>
+            <p>d²θ/dt² + (g/L)sin(θ) = 0</p>
+            <p>작은 각도에서는 sin(θ) ≈ θ로 근사화하여 선형화할 수 있지만, 각도가 클 때는 비선형성이 중요해집니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>더핑 진동자 (Duffing Oscillator)</h3>
+            <p>F = -kx - αx³ - βẋ + γcos(ωt)</p>
+            <p>비선형 스프링 항(x³)이 있는 진동자로, 카오스 현상을 보여줍니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>로렌츠 시스템 (카오스 방정식)</h3>
+            <p>dx/dt = σ(y - x)</p>
+            <p>dy/dt = x(ρ - z) - y</p>
+            <p>dz/dt = xy - βz</p>
+            <p>대표적인 카오스 시스템으로, 기상학에서 시작되었습니다.</p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>전자기학 분야</h2>
+        
+        <div class="equation highlight">
+            <h3>비선형 맥스웰 방정식</h3>
+            <p>∇×E = -∂B/∂t</p>
+            <p>∇×H = J + ∂D/∂t</p>
+            <p>여기서 D = ε₀E + P, P는 비선형적으로 E에 의존합니다.</p>
+            <p>비선형 매질에서 전자기파의 행동을 설명합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>커 효과 방정식</h3>
+            <p>n = n₀ + n₂|E|²</p>
+            <p>비선형 매질에서 굴절률이 광강도에 따라 변하는 현상을 설명합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>조셉슨 접합 방정식</h3>
+            <p>I = Ic·sin(φ)</p>
+            <p>φ̇ = 2eV/ℏ</p>
+            <p>초전도체 사이의 전류가 위상차의 사인함수로 표현됩니다.</p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>양자역학 분야</h2>
+        
+        <div class="equation highlight">
+            <h3>비선형 슈뢰딩거 방정식</h3>
+            <p>iℏ∂ψ/∂t = -ℏ²/2m ∇²ψ + V(r)ψ + g|ψ|²ψ</p>
+            <p>입자 간 상호작용이 있는 양자계에 대한 방정식입니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>비선형 클라인-고든 방정식</h3>
+            <p>∂²φ/∂t² - ∇²φ + m²φ + λφ³ = 0</p>
+            <p>상대론적 양자장을 비선형 상호작용과 함께 기술합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>솔리톤 방정식</h3>
+            <p>∂u/∂t + u∂u/∂x + ∂³u/∂x³ = 0 (KdV 방정식)</p>
+            <p>입자처럼 움직이는 파동인 솔리톤을 설명하는 방정식입니다.</p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>상대성이론 분야</h2>
+        
+        <div class="equation highlight">
+            <h3>아인슈타인 중력장 방정식</h3>
+            <p>Gμν = 8πG/c⁴ · Tμν</p>
+            <p>시공간의 곡률과 물질/에너지 분포 사이의 관계를 나타냅니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>비선형 측지선 방정식</h3>
+            <p>d²xᵅ/dτ² + Γᵅᵦᵧ(dxᵦ/dτ)(dxᵧ/dτ) = 0</p>
+            <p>일반 상대성이론에서 물체의 경로를 기술합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>슈바르츠실드 해의 비선형성</h3>
+            <p>ds² = -(1-2GM/rc²)c²dt² + (1-2GM/rc²)⁻¹dr² + r²dΩ²</p>
+            <p>구대칭 중력장에 대한 아인슈타인 방정식의 해입니다.</p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>통계역학과 열역학</h2>
+        
+        <div class="equation highlight">
+            <h3>비선형 상전이 방정식</h3>
+            <p>∂φ/∂t = D∇²φ - α(T-Tc)φ - βφ³</p>
+            <p>상태 변화를 비선형 모델로 설명합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>비선형 확산 방정식</h3>
+            <p>∂c/∂t = ∇·(D(c)∇c)</p>
+            <p>농도 의존적 확산계수를 가진 시스템을 기술합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>반데르발스 방정식</h3>
+            <p>(P + a/V²)(V - b) = RT</p>
+            <p>실제 기체의 비이상적 행동을 설명하는 방정식입니다.</p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>응집물질물리학</h2>
+        
+        <div class="equation highlight">
+            <h3>비선형 파동 방정식</h3>
+            <p>∂²u/∂t² = c²∇²u + f(u, ∇u)</p>
+            <p>비선형 매질에서 파동의 전파를 설명합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>긴즈버그-란다우 방정식</h3>
+            <p>∂ψ/∂t = α(T)ψ - β|ψ|²ψ + γ∇²ψ</p>
+            <p>초전도 상전이를 설명하는 방정식입니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>BCS 이론의 비선형 갭 방정식</h3>
+            <p>Δ(k) = -∑_k' V_kk' Δ(k')/[2E(k')]tanh[E(k')/2kT]</p>
+            <p>초전도체 내 전자쌍의 결합 에너지를 계산합니다.</p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>광학 분야</h2>
+        
+        <div class="equation highlight">
+            <h3>비선형 굴절률 방정식</h3>
+            <p>n = n₀ + n₂I</p>
+            <p>빛의 세기에 따라 굴절률이 변하는 현상을 설명합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>비선형 파동 혼합 방정식</h3>
+            <p>P^NL = ε₀(χ^(2)E² + χ^(3)E³ + ...)</p>
+            <p>여러 주파수의 빛이 비선형 매질에서 상호작용하는 현상을 설명합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>라만 산란 방정식</h3>
+            <p>∂A/∂z + α/2 A = igR|A|²A</p>
+            <p>빛과 물질의 비탄성 산란을 설명합니다.</p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>플라즈마 물리학</h2>
+        
+        <div class="equation highlight">
+            <h3>자기유체역학(MHD) 방정식</h3>
+            <p>ρ(∂v/∂t + v·∇v) = -∇p + J×B</p>
+            <p>∂B/∂t = ∇×(v×B) + η∇²B</p>
+            <p>전기 전도성 유체의 움직임을 설명합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>블라소프 방정식</h3>
+            <p>∂f/∂t + v·∇f + (q/m)(E + v×B)·∇_v f = 0</p>
+            <p>충돌이 적은 플라즈마의 통계적 분포를 설명합니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>비선형 란다우 감쇠</h3>
+            <p>∂E/∂t = -νL(k)E - α|E|²E</p>
+            <p>플라즈마 내 파동의 감쇠를 설명합니다.</p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>생물물리학</h2>
+        
+        <div class="equation highlight">
+            <h3>호지킨-헉슬리 뉴런 모델</h3>
+            <p>C_m dV/dt = -g_K(V-V_K) - g_Na(V-V_Na) - g_L(V-V_L) + I</p>
+            <p>뉴런의 활동전위 생성과 전파를 설명하는 비선형 방정식 시스템입니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>피츠휴-나구모 모델</h3>
+            <p>dv/dt = v - v³/3 - w + I</p>
+            <p>dw/dt = a(v + b - cw)</p>
+            <p>단순화된 비선형 뉴런 모델입니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>포식자-피식자 방정식 (로트카-볼테라)</h3>
+            <p>dx/dt = αx - βxy</p>
+            <p>dy/dt = δxy - γy</p>
+            <p>포식자와 피식자 개체수의 시간에 따른 변화를 설명합니다.</p>
+        </div>
+    </div>
+    
+    <div class="category">
+        <h2>천체물리학</h2>
+        
+        <div class="equation highlight">
+            <h3>항성 구조 방정식</h3>
+            <p>dP/dr = -Gm(r)ρ(r)/r²</p>
+            <p>dm/dr = 4πr²ρ(r)</p>
+            <p>dL/dr = 4πr²ρ(r)ε(r)</p>
+            <p>dT/dr = -3κρ(r)L(r)/(16πacr²T³(r))</p>
+            <p>별의 내부 구조를 기술하는 비선형 방정식 시스템입니다.</p>
+        </div>
+        
+        <div class="equation highlight">
+            <h3>비선형 중력파 방정식</h3>
+            <p>□h_μν = -16πG/c⁴ T_μν</p>
+            <p>강한 중력장에서 발생하는 중력파를 설명합니다.</p>
+        </div>
+    </div>
+
+    <script>
+        // 주요 요소 참조
+        const phaseSpace = document.getElementById('phase-space');
+        const mainPoint = document.getElementById('main-point');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const clearTracesBtn = document.getElementById('clear-traces-btn');
+        const equationSelect = document.getElementById('equation-select');
+        
+        // 파라미터 슬라이더 참조
+        const kParam = document.getElementById('k-param');
+        const alphaParam = document.getElementById('alpha-param');
+        const betaParam = document.getElementById('beta-param');
+        const gammaParam = document.getElementById('gamma-param');
+        
+        // 값 표시 요소 참조
+        const kValue = document.getElementById('k-value');
+        const alphaValue = document.getElementById('alpha-value');
+        const betaValue = document.getElementById('beta-value');
+        const gammaValue = document.getElementById('gamma-value');
+        const xValue = document.getElementById('x-value');
+        const vValue = document.getElementById('v-value');
+        const aValue = document.getElementById('a-value');
+        const rValue = document.getElementById('r-value');
+        const systemState = document.getElementById('system-state');
+        const equationDisplay = document.getElementById('equation-display');
+        
+        // 시스템 상태
+        let isSimulating = false;
+        let traces = [];
+        let animationFrameId = null;
+        
+        // 현재 시스템 상태
+        let x = 0;
+        let v = 0;
+        let t = 0;
+        let z = 0; // 3차원 시스템용 추가 변수
+        
+        // 위상 공간 크기 정보
+        const spaceWidth = phaseSpace.clientWidth;
+        const spaceHeight = phaseSpace.clientHeight;
+        const centerX = spaceWidth / 2;
+        const centerY = spaceHeight / 2;
+        const scale = 30; // 픽셀/단위 - 더 작게 설정하여 움직임을 더 크게 보이게 함
+        
+        // 시스템 파라미터
+        let k = 1.5;        // 기본값 증가
+        let alpha = 1.2;    // 기본값 증가
+        let beta = 0.2;     // 기본값 감소
+        let gamma = 0.8;    // 기본값 증가
+        const omega = 1.0;
+        
+        // 현재 방정식 유형
+        let currentEquation = 'duffing';
+        
+        // 초기화 함수
+        function initialize() {
+            updateParameterDisplays();
+            setPointPosition(0, 0);
+            updateInfoPanel();
+            
+            // 이벤트 리스너 설정
+            startBtn.addEventListener('click', toggleSimulation);
+            resetBtn.addEventListener('click', resetSimulation);
+            clearTracesBtn.addEventListener('click', clearTraces);
+            
+            // 마우스 드래그 이벤트 설정
+            setupDragHandling();
+            
+            // 파라미터 변경 이벤트 설정
+            kParam.addEventListener('input', function() {
+                k = parseFloat(this.value);
+                kValue.textContent = k.toFixed(1);
+                updateInfoPanel();
+            });
+            
+            alphaParam.addEventListener('input', function() {
+                alpha = parseFloat(this.value);
+                alphaValue.textContent = alpha.toFixed(1);
+                updateInfoPanel();
+            });
+            
+            betaParam.addEventListener('input', function() {
+                beta = parseFloat(this.value);
+                betaValue.textContent = beta.toFixed(1);
+                updateInfoPanel();
+            });
+            
+            gammaParam.addEventListener('input', function() {
+                gamma = parseFloat(this.value);
+                gammaValue.textContent = gamma.toFixed(1);
+                updateInfoPanel();
+            });
+            
+            // 방정식 선택 변경 이벤트
+            equationSelect.addEventListener('change', function() {
+                currentEquation = this.value;
+                resetSimulation();
+                updateEquationDisplay();
+                
+                // 방정식에 따른 파라미터 범위 조정
+                adjustParametersForEquation();
+            });
+            
+            // 초기 방정식 표시 업데이트
+            updateEquationDisplay();
+            
+            // 방향 벡터 초기화
+            updateDirectionVectors();
+        }
+        
+        // 시뮬레이션 시작 함수
+        function startSimulation() {
+            // 정확히 중앙 위치에서 시작
+            x = 0;  // 정중앙 위치
+            v = 0;  // 초기 속도 없음
+            z = 0;
+            
+            // 포인트 위치 업데이트
+            setPointPosition(x, v);
+            updateInfoPanel();
+            
+            // 시뮬레이션 시작
+            isSimulating = true;
+            startBtn.textContent = '중지';
+            simulate();
+        }
+        
+        // 방정식에 따른 파라미터 조정
+        function adjustParametersForEquation() {
+            // 기본 범위로 리셋
+            kParam.min = "0";
+            kParam.max = "5";
+            alphaParam.min = "0";
+            alphaParam.max = "5";
+            betaParam.min = "0";
+            betaParam.max = "2";
+            gammaParam.min = "0";
+            gammaParam.max = "2";
+            
+            // 방정식별 특화된 파라미터 조정
+            switch(currentEquation) {
+                case 'lorenz':
+                    // 로렌츠 시스템을 위한 파라미터 조정
+                    kParam.min = "0";
+                    kParam.max = "20"; // 시그마
+                    kParam.value = "10";
+                    alphaParam.min = "0";
+                    alphaParam.max = "50"; // 로
+                    alphaParam.value = "28";
+                    betaParam.min = "0";
+                    betaParam.max = "10"; // 베타
+                    betaParam.value = "2.667";
+                    break;
+                    
+                case 'pendulum':
+                    // 진자를 위한 파라미터 조정
+                    kParam.min = "0";
+                    kParam.max = "20"; // g/L
+                    kParam.value = "9.8";
+                    break;
+                    
+                case 'lotka':
+                    // 로트카-볼테라
+                    kParam.min = "0";
+                    kParam.max = "2"; // 알파
+                    kParam.value = "0.5";
+                    alphaParam.min = "0";
+                    alphaParam.max = "1"; // 베타
+                    alphaParam.value = "0.05";
+                    betaParam.min = "0";
+                    betaParam.max = "1"; // 델타
+                    betaParam.value = "0.02";
+                    gammaParam.min = "0";
+                    gammaParam.max = "1"; // 감마
+                    gammaParam.value = "0.4";
+                    break;
+                    
+                case 'fn': // 피츠휴-나구모
+                    kParam.value = "0.8"; 
+                    alphaParam.value = "0.7"; 
+                    betaParam.value = "0.8"; 
+                    gammaParam.value = "1.0"; 
+                    break;
+            }
+            
+            // 파라미터 값 업데이트
+            k = parseFloat(kParam.value);
+            alpha = parseFloat(alphaParam.value);
+            beta = parseFloat(betaParam.value);
+            gamma = parseFloat(gammaParam.value);
+            
+            // 표시 업데이트
+            updateParameterDisplays();
+        }
+        
+        // 방정식 표시 업데이트
+        function updateEquationDisplay() {
+            switch(currentEquation) {
+                case 'duffing':
+                    equationDisplay.textContent = 'F = -kx - αx³ - βẋ + γcos(ωt)';
+                    break;
+                case 'pendulum':
+                    equationDisplay.textContent = 'd²θ/dt² + (g/L)sin(θ) + βdθ/dt = γcos(ωt)';
+                    break;
+                case 'lorenz':
+                    equationDisplay.textContent = 'dx/dt = σ(y - x), dy/dt = x(ρ - z) - y, dz/dt = xy - βz';
+                    break;
+                case 'lotka':
+                    equationDisplay.textContent = 'dx/dt = αx - βxy, dy/dt = δxy - γy';
+                    break;
+                case 'josephson':
+                    equationDisplay.textContent = 'I = Ic·sin(φ), φ̇ = 2eV/ℏ';
+                    break;
+                case 'nlse':
+                    equationDisplay.textContent = 'iℏ∂ψ/∂t = -ℏ²/2m ∇²ψ + V(r)ψ + g|ψ|²ψ';
+                    break;
+                case 'einstein':
+                    equationDisplay.textContent = 'Gμν = 8πG/c⁴ · Tμν';
+                    break;
+                case 'vanderwaals':
+                    equationDisplay.textContent = '(P + a/V²)(V - b) = RT';
+                    break;
+                case 'nlrefraction':
+                    equationDisplay.textContent = 'n = n₀ + n₂I';
+                    break;
+                case 'mhd':
+                    equationDisplay.textContent = 'ρ(∂v/∂t + v·∇v) = -∇p + J×B, ∂B/∂t = ∇×(v×B) + η∇²B';
+                    break;
+                case 'fn':
+                    equationDisplay.textContent = 'dv/dt = v - v³/3 - w + I, dw/dt = a(v + b - cw)';
+                    break;
+                case 'hh':
+                    equationDisplay.textContent = 'C_m dV/dt = -g_K(V-V_K) - g_Na(V-V_Na) - g_L(V-V_L) + I';
+                    break;
+                case 'stellar':
+                    equationDisplay.textContent = 'dP/dr = -Gm(r)ρ(r)/r², dm/dr = 4πr²ρ(r), dL/dr = 4πr²ρ(r)ε(r)';
+                    break;
+                default:
+                    // 나머지 경우는 방정식 이름으로 표시
+                    equationDisplay.textContent = equationSelect.options[equationSelect.selectedIndex].text;
+            }
+        }
+        
+        // 파라미터 표시 업데이트
+        function updateParameterDisplays() {
+            kValue.textContent = k.toFixed(1);
+            alphaValue.textContent = alpha.toFixed(1);
+            betaValue.textContent = beta.toFixed(1);
+            gammaValue.textContent = gamma.toFixed(1);
+        }
+        
+        // 시뮬레이션 토글
+        function toggleSimulation() {
+            isSimulating = !isSimulating;
+            
+            if (isSimulating) {
+                startBtn.textContent = '중지';
+                simulate();
+            } else {
+                startBtn.textContent = '시작';
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+        }
+        
+        // 시뮬레이션 리셋
+        function resetSimulation() {
+            // 시뮬레이션 중지
+            isSimulating = false;
+            startBtn.textContent = '시작';
+            
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            // 상태 초기화
+            x = 0;
+            v = 0;
+            z = 0;
+            t = 0;
+            
+            setPointPosition(x, v);
+            updateInfoPanel();
+            clearTraces();
+            
+            // 방향 벡터 업데이트
+            updateDirectionVectors();
+        }
+        
+        // 드래그 처리 설정
+        function setupDragHandling() {
+            let isDragging = false;
+            
+            mainPoint.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                updatePointFromEvent(e);
+                e.preventDefault();
+            });
+            
+            window.addEventListener('mouseup', function() {
+                isDragging = false;
+            });
+            
+            phaseSpace.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    updatePointFromEvent(e);
+                    e.preventDefault();
+                    
+                    // 현재 위치에서의 벡터 업데이트
+                    updateDirectionVectors();
+                }
+            });
+            
+            // 위상 공간 클릭 처리
+            phaseSpace.addEventListener('mousedown', function(e) {
+                if (e.target === phaseSpace) {
+                    updatePointFromEvent(e);
+                    
+                    // 현재 위치에서의 벡터 업데이트
+                    updateDirectionVectors();
+                }
+            });
+        }
+        
+        // 방향 벡터 업데이트
+        function updateDirectionVectors() {
+            // 기존 벡터 제거
+            const existingVectors = phaseSpace.querySelectorAll('.vector');
+            existingVectors.forEach(v => v.remove());
+            
+            // 현재 위치에서의 가속도 계산
+            const a = calculateAcceleration(x, v, t);
+            
+            // 속도 벡터 (현재 상태의 속도)
+            const velocityVector = document.createElement('div');
+            velocityVector.className = 'vector';
+            velocityVector.style.left = (centerX + x * scale) + 'px';
+            velocityVector.style.top = (centerY - v * scale) + 'px';
+            velocityVector.style.width = (v * scale * 3) + 'px';
+            velocityVector.style.transform = `rotate(${Math.atan2(0, v) * 180 / Math.PI}deg)`;
+            velocityVector.style.backgroundColor = 'rgba(46, 204, 113, 0.7)';
+            phaseSpace.appendChild(velocityVector);
+            
+            // 가속도 벡터 (다음 속도 방향)
+            const accelVector = document.createElement('div');
+            accelVector.className = 'vector';
+            accelVector.style.left = (centerX + x * scale) + 'px';
+            accelVector.style.top = (centerY - v * scale) + 'px';
+            accelVector.style.width = (a * scale * 1.5) + 'px';
+            accelVector.style.transform = `rotate(${Math.atan2(0, a) * 180 / Math.PI + 90}deg)`;
+            accelVector.style.backgroundColor = 'rgba(231, 76, 60, 0.7)';
+            phaseSpace.appendChild(accelVector);
+        }
+        
+        // 이벤트 위치로부터 점 위치 업데이트
+        function updatePointFromEvent(e) {
+            const rect = phaseSpace.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            // 위상 공간 중심 기준 좌표로 변환
+            x = (mouseX - centerX) / scale;
+            v = (centerY - mouseY) / scale; // y축은 뒤집혀 있음
+            
+            setPointPosition(x, v);
+            updateInfoPanel();
+            
+            // 방향 벡터도 업데이트
+            updateDirectionVectors();
+        }
+        
+        // 포인트 위치 설정
+        function setPointPosition(x, v) {
+            const pixelX = centerX + x * scale;
+            const pixelY = centerY - v * scale; // y축은 뒤집혀 있음
+            
+            mainPoint.style.left = pixelX + 'px';
+            mainPoint.style.top = pixelY + 'px';
+            
+            // 현재 위치에 trace 추가
+            addTrace(pixelX, pixelY);
+            
+            // 위치가 변경될 때마다 정보 패널 업데이트
+            updateInfoPanel();
+        }
+        
+        // 자취 추가
+        function addTrace(x, y) {
+            const trace = document.createElement('div');
+            trace.className = 'trace';
+            trace.style.left = x + 'px';
+            trace.style.top = y + 'px';
+            trace.style.width = '6px';
+            trace.style.height = '6px';
+            trace.style.backgroundColor = `rgba(52, 152, 219, 0.7)`;
+            
+            phaseSpace.appendChild(trace);
+            traces.push(trace);
+            
+            // 너무 많은 trace가 쌓이지 않도록 제한
+            if (traces.length > 300) {
+                phaseSpace.removeChild(traces.shift());
+            }
+        }
+        
+        // 자취 지우기
+        function clearTraces() {
+            traces.forEach(trace => {
+                if (phaseSpace.contains(trace)) {
+                    phaseSpace.removeChild(trace);
+                }
+            });
+            traces = [];
+        }
+        
+        // 방정식에 따른 가속도 계산
+        function calculateAcceleration(x, v, t) {
+            switch(currentEquation) {
+                case 'duffing':
+                    return -k * x - alpha * x * x * x - beta * v + gamma * Math.cos(omega * t);
+                    
+                case 'pendulum':
+                    return -k * Math.sin(x) - beta * v + gamma * Math.cos(omega * t);
+                    
+                case 'lorenz':
+                    // 로렌츠 시스템 단순화 (x-y 평면 프로젝션)
+                    // 여기서 k = 시그마, alpha = 로, beta = 베타
+                    const dx = k * (v - x);
+                    const dy = x * (alpha - z) - v;
+                    const dz = x * v - beta * z;
+                    z += dz * 0.01; // z 값 업데이트
+                    return dx;
+                    
+                case 'josephson':
+                    return -k * Math.sin(x) - beta * v;
+                    
+                case 'lotka':
+                    // 로트카-볼테라 (포식자-피식자)
+                    // x = 피식자, v = 포식자
+                    // k = 알파, alpha = 베타, beta = 델타, gamma = 감마
+                    return k * x - alpha * x * v;
+                    
+                case 'vanderpol':
+                    // 반데르폴 진동자
+                    return alpha * (1 - x * x) * v - k * x;
+                    
+                case 'fn':
+                    // 피츠휴-나구모 모델
+                    // x = v (전압), v = w (회복 변수)
+                    const dv = x - x*x*x/3 - v + gamma;
+                    return dv;
+                    
+                case 'nlwave':
+                    // 비선형 파동 방정식 단순화
+                    return -k * x - alpha * x * x * x - beta * v;
+                    
+                case 'nlrefraction':
+                    // 비선형 굴절률 효과 단순화
+                    return -k * x - alpha * x * x * x * v;
+                    
+                case 'soliton':
+                    // KdV 방정식 단순화
+                    return -k * x - alpha * x * v - beta * v * v * v;
+                    
+                default:
+                    // 기본값으로 더핑 방정식 사용
+                    return -k * x - alpha * x * x * x - beta * v + gamma * Math.cos(omega * t);
+            }
+        }
+        
+        // 시뮬레이션 실행
+        function simulate() {
+            if (!isSimulating) return;
+            
+            const dt = 0.05; // 시간 단계
+            
+            // 룽게-쿠타 4차 적분
+            const a1 = calculateAcceleration(x, v, t);
+            const k1_v = a1 * dt;
+            const k1_x = v * dt;
+            
+            const a2 = calculateAcceleration(x + k1_x/2, v + k1_v/2, t + dt/2);
+            const k2_v = a2 * dt;
+            const k2_x = (v + k1_v/2) * dt;
+            
+            const a3 = calculateAcceleration(x + k2_x/2, v + k2_v/2, t + dt/2);
+            const k3_v = a3 * dt;
+            const k3_x = (v + k2_v/2) * dt;
+            
+            const a4 = calculateAcceleration(x + k3_x, v + k3_v, t + dt);
+            const k4_v = a4 * dt;
+            const k4_x = (v + k3_v) * dt;
+            
+            // 상태 업데이트
+            x += (k1_x + 2*k2_x + 2*k3_x + k4_x) / 6;
+            v += (k1_v + 2*k2_v + 2*k3_v + k4_v) / 6;
+            t += dt;
+            
+            // 일부 방정식에서 작은 랜덤 외란을 추가하여 더 다양한 움직임 생성
+            if (t % 5 < 0.1 && Math.random() < 0.3) {
+                // 시스템에 간헐적으로 작은 외란 추가
+                x += (Math.random() - 0.5) * 0.1;
+                v += (Math.random() - 0.5) * 0.1;
+            }
+            
+            // 점 위치 업데이트
+            setPointPosition(x, v);
+            
+            // 정보 패널 업데이트
+            updateInfoPanel();
+            
+            // 다음 프레임 요청
+            animationFrameId = requestAnimationFrame(simulate);
+        }
+        
+        // 정보 패널 업데이트
+        function updateInfoPanel() {
+            const a = calculateAcceleration(x, v, t);
+            
+            xValue.textContent = x.toFixed(2);
+            vValue.textContent = v.toFixed(2);
+            aValue.textContent = a.toFixed(2);
+            
+            // R = 순간변화율 / 관성항
+            const r = v !== 0 ? v / a : 0;
+            rValue.textContent = r.toFixed(2);
+            
+            // 시스템 상태 판단
+            if (r < 0) {
+                systemState.textContent = '불안정 (R < 0)';
+                systemState.style.color = 'var(--danger)';
+            } else {
+                systemState.textContent = '안정 (R ≥ 0)';
+                systemState.style.color = 'var(--secondary)';
+            }
+        }
+        
+        // 페이지 로드 시 초기화
+        window.addEventListener('load', initialize);
+    </script>
+</body>
+</html>
