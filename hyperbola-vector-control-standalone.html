@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>쌍곡선 벡터 제어</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .controls {
+      width: 100%;
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+    }
+    .control-group {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .control-item {
+      display: flex;
+      align-items: center;
+      margin: 5px 15px 5px 0;
+    }
+    label {
+      margin-right: 8px;
+    }
+    .canvas-container {
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    canvas {
+      border: 1px solid #dee2e6;
+    }
+    .info {
+      width: 100%;
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+    }
+    ol, ul {
+      padding-left: 25px;
+    }
+    ul.nested {
+      list-style-type: disc;
+    }
+    .btn {
+      padding: 8px 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #0069d9;
+    }
+    .explanation {
+      margin-top: 20px;
+      border-top: 1px solid #dee2e6;
+      padding-top: 15px;
+    }
+    .description-item {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>쌍곡선 벡터 제어 시각화</h1>
+    
+    <div class="controls">
+      <h3>쌍곡선 방정식: x²/a² - y²/b² = 1</h3>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <label for="a-value">a 값:</label>
+          <input type="range" id="a-value" min="20" max="200" value="100">
+          <span id="a-display">100</span>
+        </div>
+        
+        <div class="control-item">
+          <label for="b-value">b 값:</label>
+          <input type="range" id="b-value" min="20" max="200" value="60">
+          <span id="b-display">60</span>
+        </div>
+        
+        <div class="control-item">
+          <label for="k-value">k 값:</label>
+          <input type="range" id="k-value" min="0.1" max="3" step="0.1" value="1.5">
+          <span id="k-display">1.5</span>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <div class="control-item">
+          <label for="angle-value">각도(θ):</label>
+          <input type="range" id="angle-value" min="0" max="360" value="45">
+          <span id="angle-display">45°</span>
+        </div>
+        
+        <div class="control-item">
+          <label for="magnitude-value">크기:</label>
+          <input type="range" id="magnitude-value" min="50" max="250" value="150">
+          <span id="magnitude-display">150</span>
+        </div>
+        
+        <div class="control-item">
+          <button id="branch-toggle" class="btn">오른쪽 → 왼쪽</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="canvas-container">
+      <canvas id="hyperbola-canvas" width="600" height="400"></canvas>
+    </div>
+    
+    <div class="info">
+      <h4>사용 방법:</h4>
+      <ol>
+        <li>주황색 벡터를 직접 드래그하거나 각도(θ)와 크기를 조절하세요.</li>
+        <li>파란색 벡터는 쌍곡선 위의 해를 가리킵니다.</li>
+        <li>가지 버튼을 클릭하여 쌍곡선의 왼쪽/오른쪽 가지를 전환할 수 있습니다.</li>
+        <li>삼각함수(cos, sin)를 사용하여 벡터의 위치가 계산됩니다.</li>
+      </ol>
+      
+      <p><strong>수학적 관계:</strong> 벡터 A(각도 θ, 크기 r)가 주어지면, 벡터 B는 항상 쌍곡선 위에 위치합니다.</p>
+      <p><em>x = r·cos(θ), y = r·sin(θ) 형태로 입력 벡터가 계산되며, 출력 벡터는 x²/a² - y²/b² = 1 방정식을 만족합니다.</em></p>
+      
+      <div class="explanation">
+        <h4>그래프 요소 설명:</h4>
+        <ul>
+          <li class="description-item">
+            <strong>검은색 쌍곡선 곡선</strong> (#333333 색상):
+            <ul class="nested">
+              <li>방정식 x²/a² - y²/b² = 1을 만족하는 모든 점들의 집합입니다</li>
+              <li>이 곡선 위의 모든 점은 쌍곡선의 정의를 만족하는 해입니다</li>
+              <li>파란색 벡터(Result Vector)의 끝점은 항상 이 곡선 위에 위치합니다</li>
+            </ul>
+          </li>
+          <li class="description-item">
+            <strong>점선 회색 선</strong> (점근선, #999999 색상):
+            <ul class="nested">
+              <li>쌍곡선의 점근선(asymptotes)을 나타냅니다</li>
+              <li>방정식 y = ±(b/a)x의 그래프입니다</li>
+              <li>쌍곡선이 무한대로 뻗어나갈 때 점점 가까워지지만 절대 만나지 않는 직선입니다</li>
+              <li>이 선들은 쌍곡선의 극한 행동을 나타냅니다</li>
+            </ul>
+          </li>
+          <li class="description-item">
+            <strong>좌표축</strong> (연한 회색, #aaaaaa 색상):
+            <ul class="nested">
+              <li>수평선은 x축, 수직선은 y축을 나타냅니다</li>
+              <li>원점(0,0)은 이 두 선이 교차하는 지점입니다</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Parameters
+    let params = {
+      a: 100,
+      b: 60,
+      k: 1.5,
+      angle: 45,
+      magnitude: 150,
+      branch: 'right'
+    };
+    
+    // Get canvas and context
+    const canvas = document.getElementById('hyperbola-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Vector positions
+    let vectorA = { x: 0, y: 0 };
+    let vectorB = { x: 0, y: 0 };
+    
+    // Dragging state
+    let dragging = false;
+    
+    // Initialize and draw
+    function init() {
+      // Set up event listeners
+      setupEventListeners();
+      
+      // Draw initial state
+      drawCanvas();
+    }
+    
+    // Set up event listeners for controls
+    function setupEventListeners() {
+      // Range inputs
+      document.getElementById('a-value').addEventListener('input', (e) => {
+        params.a = parseFloat(e.target.value);
+        document.getElementById('a-display').textContent = params.a;
+        drawCanvas();
+      });
+      
+      document.getElementById('b-value').addEventListener('input', (e) => {
+        params.b = parseFloat(e.target.value);
+        document.getElementById('b-display').textContent = params.b;
+        drawCanvas();
+      });
+      
+      document.getElementById('k-value').addEventListener('input', (e) => {
+        params.k = parseFloat(e.target.value);
+        document.getElementById('k-display').textContent = params.k;
+        drawCanvas();
+      });
+      
+      document.getElementById('angle-value').addEventListener('input', (e) => {
+        params.angle = parseFloat(e.target.value);
+        document.getElementById('angle-display').textContent = params.angle + '°';
+        drawCanvas();
+      });
+      
+      document.getElementById('magnitude-value').addEventListener('input', (e) => {
+        params.magnitude = parseFloat(e.target.value);
+        document.getElementById('magnitude-display').textContent = params.magnitude;
+        drawCanvas();
+      });
+      
+      // Branch toggle button
+      document.getElementById('branch-toggle').addEventListener('click', () => {
+        params.branch = params.branch === 'right' ? 'left' : 'right';
+        document.getElementById('branch-toggle').textContent = 
+          params.branch === 'right' ? '오른쪽 → 왼쪽' : '왼쪽 → 오른쪽';
+        drawCanvas();
+      });
+      
+      // Canvas mouse events
+      canvas.addEventListener('mousedown', handleMouseDown);
+      canvas.addEventListener('mousemove', handleMouseMove);
+      canvas.addEventListener('mouseup', handleMouseUp);
+      canvas.addEventListener('mouseleave', handleMouseUp);
+    }
+    
+    // Calculate vector position based on angle and magnitude
+    function calculateVectorPosition(centerX, centerY, angle, magnitude, branch) {
+      // Convert angle to radians
+      const radians = (angle * Math.PI) / 180;
+      
+      // Calculate raw position
+      let x = centerX + magnitude * Math.cos(radians);
+      const y = centerY + magnitude * Math.sin(radians);
+      
+      // Ensure x is far enough from center to be on hyperbola (|x| > a)
+      const minX = params.a * 1.01; // Add a small buffer to ensure we're on the hyperbola
+      
+      if (branch === 'right') {
+        x = Math.max(x, centerX + minX);
+      } else {
+        x = Math.min(x, centerX - minX);
+      }
+      
+      return { x, y };
+    }
+    
+    // Draw the canvas
+    function drawCanvas() {
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Set origin to center of canvas
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      
+      // Draw coordinate axes
+      ctx.beginPath();
+      ctx.strokeStyle = '#aaaaaa';
+      ctx.lineWidth = 1;
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(canvas.width, centerY);
+      ctx.moveTo(centerX, 0);
+      ctx.lineTo(centerX, canvas.height);
+      ctx.stroke();
+      
+      // Draw hyperbola
+      drawHyperbola(ctx, centerX, centerY, params.a, params.b);
+      
+      // Update vectorA position based on angle, magnitude, and branch
+      vectorA = calculateVectorPosition(
+        centerX, 
+        centerY, 
+        params.angle, 
+        params.magnitude, 
+        params.branch
+      );
+      
+      // Draw control vector (vectorA)
+      drawVector(ctx, centerX, centerY, vectorA.x - centerX, vectorA.y - centerY, '#ff6600', 'Control Vector');
+      
+      // Calculate vectorB position on hyperbola
+      let resultX, resultY;
+      
+      // Determine sign based on branch
+      const sign = params.branch === 'right' ? 1 : -1;
+      
+      // First calculate x-coordinate based on control vector
+      resultX = sign * Math.abs(params.k * (vectorA.x - centerX));
+      
+      // Ensure x is far enough from center to be on hyperbola
+      resultX = sign * Math.max(Math.abs(resultX), params.a * 1.01);
+      
+      // Calculate y using hyperbola equation
+      resultY = params.b * Math.sqrt(Math.pow(Math.abs(resultX)/params.a, 2) - 1);
+      
+      // Determine sign of y based on control vector's position
+      resultY = resultY * (vectorA.y > centerY ? 1 : -1);
+      
+      // Update vectorB
+      vectorB = {
+        x: centerX + resultX,
+        y: centerY + resultY
+      };
+      
+      // Draw result vector (vectorB)
+      drawVector(ctx, centerX, centerY, resultX, resultY, '#0066ff', 'Result Vector');
+      
+      // Draw point on hyperbola
+      ctx.beginPath();
+      ctx.fillStyle = '#ff0000';
+      ctx.arc(centerX + resultX, centerY + resultY, 5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw angle indicator for control vector
+      drawAngleIndicator(ctx, centerX, centerY, params.angle, 40);
+    }
+    
+    // Draw hyperbola
+    function drawHyperbola(ctx, centerX, centerY, a, b) {
+      // Draw hyperbola x²/a² - y²/b² = 1
+      ctx.beginPath();
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 2;
+      
+      // Right branch
+      for (let x = a; x < centerX + 300; x += 1) {
+        const y = b * Math.sqrt(Math.pow(x/a, 2) - 1);
+        if (x === a) {
+          ctx.moveTo(centerX + x, centerY + y);
+          ctx.moveTo(centerX + x, centerY - y);
+        } else {
+          ctx.lineTo(centerX + x, centerY + y);
+          ctx.moveTo(centerX + x, centerY - y);
+          ctx.lineTo(centerX + x, centerY - y);
+        }
+      }
+      
+      // Left branch
+      for (let x = a; x < centerX + 300; x += 1) {
+        const y = b * Math.sqrt(Math.pow(x/a, 2) - 1);
+        ctx.moveTo(centerX - x, centerY + y);
+        ctx.lineTo(centerX - x, centerY + y);
+        ctx.moveTo(centerX - x, centerY - y);
+        ctx.lineTo(centerX - x, centerY - y);
+      }
+      
+      ctx.stroke();
+      
+      // Draw asymptotes
+      ctx.beginPath();
+      ctx.strokeStyle = '#999999';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 5]);
+      
+      const slope = b / a;
+      ctx.moveTo(centerX - 300, centerY - slope * 300);
+      ctx.lineTo(centerX + 300, centerY + slope * 300);
+      ctx.moveTo(centerX - 300, centerY + slope * 300);
+      ctx.lineTo(centerX + 300, centerY - slope * 300);
+      
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    
+    // Draw vector
+    function drawVector(ctx, startX, startY, dx, dy, color, label) {
+      const endX = startX + dx;
+      const endY = startY + dy;
+      
+      // Draw vector line
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      
+      // Draw arrowhead
+      const headLength = 10;
+      const angle = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.fillStyle = color;
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(
+        endX - headLength * Math.cos(angle - Math.PI / 6),
+        endY - headLength * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        endX - headLength * Math.cos(angle + Math.PI / 6),
+        endY - headLength * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw label
+      ctx.font = '12px Arial';
+      ctx.fillStyle = color;
+      ctx.fillText(label, endX + 5, endY - 5);
+      
+      // Display vector values
+      ctx.fillText(`(${dx.toFixed(0)}, ${dy.toFixed(0)})`, endX + 5, endY + 10);
+    }
+    
+    // Draw angle indicator
+    function drawAngleIndicator(ctx, centerX, centerY, angle, radius) {
+      const startAngle = 0;
+      const endAngle = (angle * Math.PI) / 180;
+      
+      ctx.beginPath();
+      ctx.strokeStyle = '#ff9900';
+      ctx.lineWidth = 1;
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle, false);
+      ctx.stroke();
+      
+      // Add angle label
+      const labelX = centerX + (radius + 15) * Math.cos(endAngle / 2);
+      const labelY = centerY + (radius + 15) * Math.sin(endAngle / 2);
+      ctx.fillStyle = '#ff9900';
+      ctx.fillText(`${angle}°`, labelX, labelY);
+    }
+    
+    // Handle mouse down event
+    function handleMouseDown(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      
+      // Check if mouse is near vectorA point
+      const vectorAPos = calculateVectorPosition(
+        centerX, 
+        centerY, 
+        params.angle, 
+        params.magnitude, 
+        params.branch
+      );
+      
+      const distance = Math.sqrt(Math.pow(x - vectorAPos.x, 2) + Math.pow(y - vectorAPos.y, 2));
+      
+      if (distance < 15) {
+        dragging = true;
+      }
+    }
+    
+    // Handle mouse move event
+    function handleMouseMove(e) {
+      if (dragging) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        
+        // Calculate angle from center to mouse position
+        const dx = x - centerX;
+        const dy = y - centerY;
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        
+        // Normalize angle to 0-360
+        if (angle < 0) angle += 360;
+        
+        // Calculate magnitude (distance from center)
+        const magnitude = Math.sqrt(dx*dx + dy*dy);
+        
+        // Determine which branch based on x position
+        const branch = dx > 0 ? 'right' : 'left';
+        
+        // Update parameters
+        params.angle = angle;
+        params.magnitude = magnitude;
+        params.branch = branch;
+        
+        // Update displays
+        document.getElementById('angle-display').textContent = Math.round(angle) + '°';
+        document.getElementById('angle-value').value = Math.round(angle);
+        document.getElementById('magnitude-display').textContent = Math.round(magnitude);
+        document.getElementById('magnitude-value').value = Math.round(magnitude);
+        document.getElementById('branch-toggle').textContent = 
+          branch === 'right' ? '오른쪽 → 왼쪽' : '왼쪽 → 오른쪽';
+        
+        // Redraw
+        drawCanvas();
+      }
+    }
+    
+    // Handle mouse up event
+    function handleMouseUp() {
+      dragging = false;
+    }
+    
+    // Initialize when the window loads
+    window.onload = init;
+  </script>
+</body>
+</html>

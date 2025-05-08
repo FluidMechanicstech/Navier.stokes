@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나비에 스토크스 방정식 시뮬레이터</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1, h2, h3 {
+            color: #0066cc;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .panel {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .simulation-canvas {
+            border: 1px solid #ddd;
+            background-color: #fff;
+            margin-bottom: 20px;
+            cursor: crosshair; /* 드래그를 위한 커서 변경 */
+        }
+        
+        .status-bar {
+            background-color: #eef7ff;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #0066cc;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+        }
+        
+        .value-display {
+            display: inline-block;
+            width: 50px;
+            text-align: right;
+        }
+        
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background-color: #0055aa;
+        }
+        
+        .equation {
+            padding: 10px;
+            background-color: #f0f8ff;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .vector-field-legend {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            background-color: #e9e9e9;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background-color: #0066cc;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/en/ajax/libs/mathjs/11.1.0/math.min.js"></script>
+</head>
+<body>
+    <h1>나비에 스토크스 방정식 시뮬레이터</h1>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="simulation">시뮬레이션</div>
+        <div class="tab" data-tab="theory">이론 설명</div>
+        <div class="tab" data-tab="analysis">결과 분석</div>
+    </div>
+    
+    <div class="tab-content simulation active" data-tab="simulation">
+        <div class="container">
+            <div class="panel">
+                <h2>유체 흐름 시뮬레이션</h2>
+                <canvas id="simulationCanvas" class="simulation-canvas" width="550" height="400"></canvas>
+                <div id="statusBar" class="status-bar">마우스로 드래그하여 유체와 상호작용하세요. 드래그 모드를 선택하고 드래그 반경과 강도를 조절할 수 있습니다.</div>
+                
+                <div class="vector-field-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: rgba(0, 102, 204, 0.7);"></div>
+                        <span>속도 벡터</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: rgba(255, 102, 0, 0.7);"></div>
+                        <span>압력 구배</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: rgba(0, 204, 102, 0.7);"></div>
+                        <span>와도</span>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <button id="startButton">시작</button>
+                        <button id="pauseButton">일시정지</button>
+                        <button id="resetButton">초기화</button>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="showVelocity" checked> 속도 벡터 표시
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showPressure" checked> 압력 필드 표시
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showVorticity"> 와도 표시
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>시뮬레이션 매개변수</h2>
+                
+                <div class="control-group">
+                    <label for="viscosity">점성 계수 (μ) <span id="viscosityValue" class="value-display">0.01</span></label>
+                    <input type="range" id="viscosity" min="0.001" max="0.1" step="0.001" value="0.01">
+                </div>
+                
+                <div class="control-group">
+                    <label for="density">밀도 (ρ) <span id="densityValue" class="value-display">1.0</span></label>
+                    <input type="range" id="density" min="0.1" max="10.0" step="0.1" value="1.0">
+                </div>
+                
+                <div class="control-group">
+                    <label for="timeStep">시간 간격 <span id="timeStepValue" class="value-display">0.01</span></label>
+                    <input type="range" id="timeStep" min="0.001" max="0.05" step="0.001" value="0.01">
+                </div>
+                
+                <div class="control-group">
+                    <label for="iterations">반복 횟수 <span id="iterationsValue" class="value-display">10</span></label>
+                    <input type="range" id="iterations" min="1" max="50" step="1" value="10">
+                </div>
+                
+                <div class="control-group">
+                    <label for="obstacleType">장애물 유형</label>
+                    <select id="obstacleType">
+                        <option value="none">없음</option>
+                        <option value="circle">원형</option>
+                        <option value="square">사각형</option>
+                        <option value="custom">사용자 정의 (드래그하여 그리기)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="boundaryCondition">경계 조건</label>
+                    <select id="boundaryCondition">
+                        <option value="noslip">미끄러짐 없음 (No-slip)</option>
+                        <option value="free">자유 흐름 (Free-slip)</option>
+                        <option value="periodic">주기적 (Periodic)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="initialCondition">초기 조건</label>
+                    <select id="initialCondition">
+                        <option value="uniform">균일 흐름</option>
+                        <option value="vortex">와류</option>
+                        <option value="shear">전단 흐름</option>
+                        <option value="random">무작위</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="dragMode">드래그 모드</label>
+                    <select id="dragMode">
+                        <option value="none">없음</option>
+                        <option value="force">외력 추가</option>
+                        <option value="velocity">속도 직접 조작</option>
+                        <option value="vortex">와류 생성</option>
+                        <option value="obstacle">장애물 그리기</option>
+                        <option value="erase">지우기</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="dragRadius">드래그 반경 <span id="dragRadiusValue" class="value-display">3</span></label>
+                    <input type="range" id="dragRadius" min="1" max="10" step="1" value="3">
+                </div>
+                <div class="control-group">
+                    <label for="dragIntensity">드래그 강도 <span id="dragIntensityValue" class="value-display">0.5</span></label>
+                    <input type="range" id="dragIntensity" min="0.1" max="2.0" step="0.1" value="0.5">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tab-content theory" data-tab="theory">
+        <div class="container">
+            <div class="panel">
+                <h2>나비에 스토크스 방정식 개요</h2>
+                
+                <p>나비에 스토크스 방정식은 유체의 운동을 기술하는 비선형 편미분 방정식입니다. 이 방정식은 운동량 보존 법칙에서 유도됩니다.</p>
+                
+                <div class="equation">
+                    <p>
+                        $$\rho\frac{\partial \vec{u}}{\partial t} + \rho(\vec{u} \cdot \nabla)\vec{u} = -\nabla p + \mu \nabla^2 \vec{u} + \vec{F}$$
+                    </p>
+                </div>
+                
+                <p>여기서:</p>
+                <ul>
+                    <li>\(\rho\): 유체의 밀도</li>
+                    <li>\(\vec{u}\): 유체의 속도 벡터</li>
+                    <li>\(p\): 압력</li>
+                    <li>\(\mu\): 점성 계수</li>
+                    <li>\(\vec{F}\): 외부 힘</li>
+                </ul>
+                
+                <p>비압축성 유체의 경우, 다음 연속 방정식도 충족해야 합니다:</p>
+                
+                <div class="equation">
+                    <p>
+                        $$\nabla \cdot \vec{u} = 0$$
+                    </p>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>수치 해석 방법</h2>
+                
+                <p>이 시뮬레이터는 다음과 같은 방법으로 나비에 스토크스 방정식을 수치적으로 해결합니다:</p>
+                
+                <h3>1. 분할 단계 방법</h3>
+                <p>각 시간 단계에서 다음 세 단계로 나누어 계산합니다:</p>
+                <ul>
+                    <li><strong>이류 단계</strong>: 속도장을 이류시킵니다 (\((\vec{u} \cdot \nabla)\vec{u}\))</li>
+                    <li><strong>확산 단계</strong>: 점성 효과를 계산합니다 (\(\mu \nabla^2 \vec{u}\))</li>
+                    <li><strong>투영 단계</strong>: 압력을 계산하고 속도장이 비압축성 조건을 만족하도록 합니다</li>
+                </ul>
+                
+                <h3>2. 이산화</h3>
+                <p>공간적으로는 유한 차분법을 사용하여 격자화하고, 시간적으로는 전방 오일러법 또는 룽게-쿠타법을 사용합니다.</p>
+                
+                <h3>3. 경계 조건</h3>
+                <p>다양한 경계 조건을 적용할 수 있습니다:</p>
+                <ul>
+                    <li><strong>미끄러짐 없음 (No-slip)</strong>: 벽면에서 속도가 0</li>
+                    <li><strong>자유 흐름 (Free-slip)</strong>: 벽면에 수직인 속도만 0</li>
+                    <li><strong>주기적 (Periodic)</strong>: 한쪽 경계에서 나간 유체가 반대쪽에서 다시 들어옴</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tab-content analysis" data-tab="analysis">
+        <div class="container">
+            <div class="panel">
+                <h2>시뮬레이션 분석</h2>
+                
+                <div id="velocityChart" class="chart-container">
+                    <canvas id="velocityCanvas" width="500" height="300"></canvas>
+                </div>
+                
+                <div id="pressureChart" class="chart-container">
+                    <canvas id="pressureCanvas" width="500" height="300"></canvas>
+                </div>
+                
+                <div id="vorticityChart" class="chart-container">
+                    <canvas id="vorticityCanvas" width="500" height="300"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>에너지 및 안정성 분석</h2>
+                
+                <p>레이놀즈 수 (Re): <span id="reynoldsNumber">-</span></p>
+                
+                <div class="control-group">
+                    <label for="analysisPoint">분석 지점 선택:</label>
+                    <select id="analysisPoint">
+                        <option value="center">중앙</option>
+                        <option value="custom">사용자 지정 (캔버스에서 클릭)</option>
+                    </select>
+                </div>
+                
+                <h3>안정성 분석</h3>
+                <p>시스템 안정성 (R): <span id="stabilityValue">-</span></p>
+                <p>관찰:</p>
+                <p id="stabilityObservation"></p>
+                
+                <h3>에너지 분석</h3>
+                <p>운동 에너지: <span id="kineticEnergy">-</span></p>
+                <p>소산 에너지: <span id="dissipatedEnergy">-</span></p>
+                
+                <button id="exportDataButton">데이터 내보내기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 페이지 로딩 및 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 탭 전환 기능
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 모든 탭에서 active 클래스 제거
+                    tabs.forEach(t => t.classList.remove('active'));
+                    // 클릭된 탭에 active 클래스 추가
+                    this.classList.add('active');
+                    
+                    // 모든 탭 콘텐츠 숨기기
+                    const tabContents = document.querySelectorAll('.tab-content');
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // 해당 탭 콘텐츠 표시
+                    const tabName = this.dataset.tab;
+                    const activeContent = document.querySelector(`.tab-content[data-tab="${tabName}"]`);
+                    activeContent.classList.add('active');
+                });
+            });
+            
+            // 슬라이더 값 표시 업데이트
+            const updateSliderValue = (sliderId, valueId) => {
+                const slider = document.getElementById(sliderId);
+                const valueDisplay = document.getElementById(valueId);
+                valueDisplay.textContent = slider.value;
+                
+                slider.addEventListener('input', function() {
+                    valueDisplay.textContent = this.value;
+                    if (simulator) {
+                        if (sliderId === 'viscosity') simulator.setViscosity(parseFloat(this.value));
+                        if (sliderId === 'density') simulator.setDensity(parseFloat(this.value));
+                        if (sliderId === 'timeStep') simulator.setTimeStep(parseFloat(this.value));
+                        if (sliderId === 'iterations') simulator.setIterations(parseInt(this.value));
+                    }
+                });
+            };
+            
+            updateSliderValue('viscosity', 'viscosityValue');
+            updateSliderValue('density', 'densityValue');
+            updateSliderValue('timeStep', 'timeStepValue');
+            updateSliderValue('iterations', 'iterationsValue');
+            
+            // 시뮬레이션 캔버스 설정
+            const canvas = document.getElementById('simulationCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 나비에 스토크스 시뮬레이터 클래스
+            class NavierStokesSimulator {
+                constructor(canvas) {
+                    this.canvas = canvas;
+                    this.ctx = canvas.getContext('2d');
+                    this.width = canvas.width;
+                    this.height = canvas.height;
+                    
+                    // 시뮬레이션 매개변수
+                    this.viscosity = 0.01;
+                    this.density = 1.0;
+                    this.timeStep = 0.01;
+                    this.iterations = 10;
+                    
+                    // 그리드 설정
+                    this.resolution = 128; // 그리드 해상도 증가
+                    this.cellWidth = this.width / this.resolution;
+                    this.cellHeight = this.height / this.resolution;
+                    
+                    // 유체 속성 초기화
+                    this.velocity = { x: new Array(this.resolution * this.resolution).fill(0),
+                                    y: new Array(this.resolution * this.resolution).fill(0) };
+                    this.velocityPrev = { x: new Array(this.resolution * this.resolution).fill(0),
+                                        y: new Array(this.resolution * this.resolution).fill(0) };
+                    this.pressure = new Array(this.resolution * this.resolution).fill(0);
+                    this.divergence = new Array(this.resolution * this.resolution).fill(0);
+                    
+                    // 장애물 및 경계 상태
+                    this.obstacles = new Array(this.resolution * this.resolution).fill(0);
+                    this.boundaryCondition = 'noslip';
+                    
+                    // 시뮬레이션 상태
+                    this.running = false;
+                    this.time = 0;
+                    this.animationFrame = null;
+                    
+                    // 이벤트 및 인터랙션 설정
+                    this.setupInteraction();
+                    
+                    // 초기 조건 설정
+                    this.setInitialCondition('uniform');
+                }
+                
+                // 매개변수 설정 메서드
+                setViscosity(val) { this.viscosity = val; }
+                setDensity(val) { this.density = val; }
+                setTimeStep(val) { this.timeStep = val; }
+                setIterations(val) { this.iterations = val; }
+                
+                // 초기 조건 설정
+                setInitialCondition(type) {
+                    // 기존 속도 필드 초기화
+                    this.velocity.x.fill(0);
+                    this.velocity.y.fill(0);
+                    
+                    switch (type) {
+                        case 'uniform':
+                            // 왼쪽에서 오른쪽으로 균일한 흐름
+                            for (let i = 0; i < this.resolution; i++) {
+                                for (let j = 0; j < this.resolution; j++) {
+                                    const idx = this.IX(i, j);
+                                    this.velocity.x[idx] = 0.2;
+                                }
+                            }
+                            break;
+                            
+                        case 'vortex':
+                            // 중앙에 와류 생성
+                            const centerX = Math.floor(this.resolution / 2);
+                            const centerY = Math.floor(this.resolution / 2);
+                            const radius = Math.min(centerX, centerY) / 2;
+                            
+                            for (let i = 0; i < this.resolution; i++) {
+                                for (let j = 0; j < this.resolution; j++) {
+                                    const idx = this.IX(i, j);
+                                    const dx = i - centerX;
+                                    const dy = j - centerY;
+                                    const distance = Math.sqrt(dx * dx + dy * dy);
+                                    
+                                    if (distance < radius) {
+                                        // 원형 와류 패턴 생성
+                                        const strength = (1 - distance / radius) * 0.5;
+                                        this.velocity.x[idx] = -dy * strength;
+                                        this.velocity.y[idx] = dx * strength;
+                                    }
+                                }
+                            }
+                            break;
+                            
+                        case 'shear':
+                            // 상하 방향으로 속도 차이가 있는 전단 흐름
+                            for (let i = 0; i < this.resolution; i++) {
+                                for (let j = 0; j < this.resolution; j++) {
+                                    const idx = this.IX(i, j);
+                                    // 위아래 반으로 나눠서 반대 방향으로 흐름
+                                    this.velocity.x[idx] = j < this.resolution / 2 ? 0.2 : -0.2;
+                                }
+                            }
+                            break;
+                            
+                        case 'random':
+                            // 무작위 속도 필드
+                            for (let i = 0; i < this.resolution; i++) {
+                                for (let j = 0; j < this.resolution; j++) {
+                                    const idx = this.IX(i, j);
+                                    this.velocity.x[idx] = (Math.random() - 0.5) * 0.2;
+                                    this.velocity.y[idx] = (Math.random() - 0.5) * 0.2;
+                                }
+                            }
+                            break;
+                    }
+                    
+                    // 속도 복사 (이전 상태용)
+                    this.velocityPrev.x = [...this.velocity.x];
+                    this.velocityPrev.y = [...this.velocity.y];
+                }
+                
+                // 2D 인덱스를 1D 배열 인덱스로 변환
+                IX(i, j) {
+                    return i + j * this.resolution;
+                }
+                
+                // 시뮬레이션 단계
+                step() {
+                    // 각 단계를 구현합니다
+                    this.diffuse(this.velocityPrev.x, this.velocity.x, this.viscosity);
+                    this.diffuse(this.velocityPrev.y, this.velocity.y, this.viscosity);
+                    
+                    this.project();
+                    
+                    this.advect(this.velocity.x, this.velocityPrev.x, this.velocityPrev.x, this.velocityPrev.y);
+                    this.advect(this.velocity.y, this.velocityPrev.y, this.velocityPrev.x, this.velocityPrev.y);
+                    
+                    this.project();
+                    
+                    // 장애물 적용
+                    this.applyObstacles();
+                    
+                    // 시간 업데이트
+                    this.time += this.timeStep;
+                    
+                    // 안정성 및 에너지 계산
+                    this.calculateStability();
+                }
+                
+                // 확산 과정 (점성)
+                diffuse(x, x0, diffusion) {
+                    const a = this.timeStep * diffusion * (this.resolution - 2) * (this.resolution - 2);
+                    
+                    for (let k = 0; k < this.iterations; k++) {
+                        for (let i = 1; i < this.resolution - 1; i++) {
+                            for (let j = 1; j < this.resolution - 1; j++) {
+                                const idx = this.IX(i, j);
+                                
+                                x[idx] = (x0[idx] + a * (
+                                    x[this.IX(i+1, j)] +
+                                    x[this.IX(i-1, j)] +
+                                    x[this.IX(i, j+1)] +
+                                    x[this.IX(i, j-1)]
+                                )) / (1 + 4 * a);
+                            }
+                        }
+                        
+                        this.setBoundary(x);
+                    }
+                }
+                
+                // 이류 과정
+                advect(d, d0, u, v) {
+                    for (let i = 1; i < this.resolution - 1; i++) {
+                        for (let j = 1; j < this.resolution - 1; j++) {
+                            const idx = this.IX(i, j);
+                            
+                            // 역추적
+                            let x = i - this.timeStep * u[idx] * this.resolution;
+                            let y = j - this.timeStep * v[idx] * this.resolution;
+                            
+                            // 경계 안에 있도록
+                            x = Math.max(0.5, Math.min(this.resolution - 1.5, x));
+                            y = Math.max(0.5, Math.min(this.resolution - 1.5, y));
+                            
+                            // 격자점 계산
+                            const i0 = Math.floor(x);
+                            const i1 = i0 + 1;
+                            const j0 = Math.floor(y);
+                            const j1 = j0 + 1;
+                            
+                            // 보간 가중치
+                            const s1 = x - i0;
+                            const s0 = 1 - s1;
+                            const t1 = y - j0;
+                            const t0 = 1 - t1;
+                            
+                            // 쌍선형 보간
+                            d[idx] = s0 * (t0 * d0[this.IX(i0, j0)] + t1 * d0[this.IX(i0, j1)]) +
+                                     s1 * (t0 * d0[this.IX(i1, j0)] + t1 * d0[this.IX(i1, j1)]);
+                        }
+                    }
+                    
+                    this.setBoundary(d);
+                }
+                
+                // 투영 단계 (비압축성 조건 강제)
+                project() {
+                    // 발산 계산
+                    for (let i = 1; i < this.resolution - 1; i++) {
+                        for (let j = 1; j < this.resolution - 1; j++) {
+                            const idx = this.IX(i, j);
+                            
+                            this.divergence[idx] = -0.5 * (
+                                this.velocity.x[this.IX(i+1, j)] -
+                                this.velocity.x[this.IX(i-1, j)] +
+                                this.velocity.y[this.IX(i, j+1)] -
+                                this.velocity.y[this.IX(i, j-1)]
+                            ) / this.resolution;
+                            
+                            this.pressure[idx] = 0;
+                        }
+                    }
+                    
+                    this.setBoundary(this.divergence);
+                    this.setBoundary(this.pressure);
+                    
+                    // 압력 해 계산 (Gauss-Seidel 반복)
+                    for (let k = 0; k < this.iterations; k++) {
+                        for (let i = 1; i < this.resolution - 1; i++) {
+                            for (let j = 1; j < this.resolution - 1; j++) {
+                                const idx = this.IX(i, j);
+                                
+                                this.pressure[idx] = (
+                                    this.divergence[idx] +
+                                    this.pressure[this.IX(i+1, j)] +
+                                    this.pressure[this.IX(i-1, j)] +
+                                    this.pressure[this.IX(i, j+1)] +
+                                    this.pressure[this.IX(i, j-1)]
+                                ) / 4;
+                            }
+                        }
+                        
+                        this.setBoundary(this.pressure);
+                    }
+                    
+                    // 압력 경도에 따라 속도 필드 조정
+                    for (let i = 1; i < this.resolution - 1; i++) {
+                        for (let j = 1; j < this.resolution - 1; j++) {
+                            const idx = this.IX(i, j);
+                            
+                            this.velocity.x[idx] -= 0.5 * (
+                                this.pressure[this.IX(i+1, j)] -
+                                this.pressure[this.IX(i-1, j)]
+                            ) * this.resolution;
+                            
+                            this.velocity.y[idx] -= 0.5 * (
+                                this.pressure[this.IX(i, j+1)] -
+                                this.pressure[this.IX(i, j-1)]
+                            ) * this.resolution;
+                        }
+                    }
+                    
+                    this.setBoundary(this.velocity.x);
+                    this.setBoundary(this.velocity.y);
+                }
+                
+                // 경계 조건 적용
+                setBoundary(x) {
+                    // 모서리 처리
+                    x[this.IX(0, 0)] = 0.5 * (x[this.IX(1, 0)] + x[this.IX(0, 1)]);
+                    x[this.IX(0, this.resolution-1)] = 0.5 * (x[this.IX(1, this.resolution-1)] + x[this.IX(0, this.resolution-2)]);
+                    x[this.IX(this.resolution-1, 0)] = 0.5 * (x[this.IX(this.resolution-2, 0)] + x[this.IX(this.resolution-1, 1)]);
+                    x[this.IX(this.resolution-1, this.resolution-1)] = 0.5 * (x[this.IX(this.resolution-2, this.resolution-1)] + x[this.IX(this.resolution-1, this.resolution-2)]);
+                    
+                    // 벽 처리
+                    for (let i = 1; i < this.resolution - 1; i++) {
+                        // 상하 벽
+                        x[this.IX(i, 0)] = this.boundaryCondition === 'noslip' ? -x[this.IX(i, 1)] : x[this.IX(i, 1)];
+                        x[this.IX(i, this.resolution-1)] = this.boundaryCondition === 'noslip' ? -x[this.IX(i, this.resolution-2)] : x[this.IX(i, this.resolution-2)];
+                        
+                        // 좌우 벽
+                        x[this.IX(0, i)] = this.boundaryCondition === 'noslip' ? -x[this.IX(1, i)] : x[this.IX(1, i)];
+                        x[this.IX(this.resolution-1, i)] = this.boundaryCondition === 'noslip' ? -x[this.IX(this.resolution-2, i)] : x[this.IX(this.resolution-2, i)];
+                    }
+                    
+                    // 주기적 경계 조건
+                    if (this.boundaryCondition === 'periodic') {
+                        for (let i = 1; i < this.resolution - 1; i++) {
+                            // 좌우 연결
+                            x[this.IX(0, i)] = x[this.IX(this.resolution-2, i)];
+                            x[this.IX(this.resolution-1, i)] = x[this.IX(1, i)];
+                            
+                            // 상하 연결
+                            x[this.IX(i, 0)] = x[this.IX(i, this.resolution-2)];
+                            x[this.IX(i, this.resolution-1)] = x[this.IX(i, 1)];
+                        }
+                    }
+                }
+                
+                // 장애물 적용
+                applyObstacles() {
+                    for (let i = 0; i < this.resolution; i++) {
+                        for (let j = 0; j < this.resolution; j++) {
+                            const idx = this.IX(i, j);
+                            
+                            if (this.obstacles[idx] === 1) {
+                                this.velocity.x[idx] = 0;
+                                this.velocity.y[idx] = 0;
+                            }
+                        }
+                    }
+                }
+                
+                // 안정성 계산
+                calculateStability() {
+                    // 레이놀즈 수 계산 (특징적 길이와 속도를 기준으로)
+                    let maxVelocity = 0;
+                    for (let i = 0; i < this.velocity.x.length; i++) {
+                        const speed = Math.sqrt(
+                            this.velocity.x[i] * this.velocity.x[i] +
+                            this.velocity.y[i] * this.velocity.y[i]
+                        );
+                        maxVelocity = Math.max(maxVelocity, speed);
+                    }
+                    
+                    const characteristicLength = this.resolution * this.cellWidth;
+                    const reynolds = (maxVelocity * characteristicLength) / this.viscosity;
+                    
+                    // 레이놀즈 수 표시
+                    const reynoldsElement = document.getElementById('reynoldsNumber');
+                    if (reynoldsElement) {
+                        reynoldsElement.textContent = reynolds.toFixed(2);
+                    }
+                    
+                    // 안정성 비율 계산 (예시)
+                    // R = dx/dt / (d^2x/dt^2) 비율 계산
+                    let stabilityRatio = 0;
+                    let totalKineticEnergy = 0;
+                    
+                    for (let i = 1; i < this.resolution - 1; i++) {
+                        for (let j = 1; j < this.resolution - 1; j++) {
+                            const idx = this.IX(i, j);
+                            
+                            const vx = this.velocity.x[idx];
+                            const vy = this.velocity.y[idx];
+                            
+                            // 운동 에너지 계산
+                            const kineticEnergy = 0.5 * this.density * (vx * vx + vy * vy);
+                            totalKineticEnergy += kineticEnergy;
+                            
+                            // 가속도 근사값 (중앙 차분)
+                            const dvx_dt = (this.velocity.x[idx] - this.velocityPrev.x[idx]) / this.timeStep;
+                            const dvy_dt = (this.velocity.y[idx] - this.velocityPrev.y[idx]) / this.timeStep;
+                            
+                            // 속도 크기
+                            const v = Math.sqrt(vx * vx + vy * vy);
+                            
+                            // 가속도 크기
+                            const a = Math.sqrt(dvx_dt * dvx_dt + dvy_dt * dvy_dt);
+                            
+                            // 비율 계산 (0으로 나누기 방지)
+                            if (a > 0.0001) {
+                                stabilityRatio += v / a;
+                            }
+                        }
+                    }
+                    
+                    // 평균 계산
+                    stabilityRatio /= (this.resolution - 2) * (this.resolution - 2);
+                    
+                    // 안정성 표시
+                    const stabilityElement = document.getElementById('stabilityValue');
+                    const observationElement = document.getElementById('stabilityObservation');
+                    
+                    if (stabilityElement) {
+                        stabilityElement.textContent = stabilityRatio.toFixed(4);
+                    }
+                    
+                    if (observationElement) {
+                        if (stabilityRatio < 0) {
+                            observationElement.textContent = "시스템이 불안정하며 발산할 가능성이 있습니다.";
+                        } else if (stabilityRatio < 1) {
+                            observationElement.textContent = "시스템이 변화에 민감하게 반응하고 있습니다.";
+                        } else {
+                            observationElement.textContent = "시스템이 안정적인 상태에 있습니다.";
+                        }
+                    }
+                    
+                    // 운동 에너지 표시
+                    const kineticEnergyElement = document.getElementById('kineticEnergy');
+                    if (kineticEnergyElement) {
+                        kineticEnergyElement.textContent = totalKineticEnergy.toFixed(6);
+                    }
+                }
+                
+                // 벡터 필드 시각화
+                renderVectorField() {
+                    this.ctx.clearRect(0, 0, this.width, this.height);
+                    
+                    // 압력 필드 그리기 (옵션)
+                    const showPressure = document.getElementById('showPressure').checked;
+                    if (showPressure) {
+                        // 최소/최대 압력 찾기
+                        let minP = Infinity, maxP = -Infinity;
+                        for (let i = 0; i < this.pressure.length; i++) {
+                            minP = Math.min(minP, this.pressure[i]);
+                            maxP = Math.max(maxP, this.pressure[i]);
+                        }
+                        
+                        // 압력 필드 칼라맵으로 그리기
+                        for (let i = 0; i < this.resolution; i++) {
+                            for (let j = 0; j < this.resolution; j++) {
+                                const idx = this.IX(i, j);
+                                const p = this.pressure[idx];
+                                
+                                // 압력을 0-1 스케일로 정규화
+                                const normalizedP = (p - minP) / (maxP - minP || 1);
+                                
+                                // 파란색(낮음)부터 빨간색(높음)
+                                const r = Math.floor(normalizedP * 255);
+                                const b = Math.floor((1 - normalizedP) * 255);
+                                const g = 0;
+                                
+                                this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
+                                this.ctx.fillRect(
+                                    i * this.cellWidth,
+                                    j * this.cellHeight,
+                                    this.cellWidth,
+                                    this.cellHeight
+                                );
+                            }
+                        }
+                    }
+                    
+                    // 속도 벡터 그리기 (옵션)
+                    const showVelocity = document.getElementById('showVelocity').checked;
+                    if (showVelocity) {
+                        this.ctx.strokeStyle = 'rgba(0, 102, 204, 0.7)';
+                        this.ctx.lineWidth = 1;
+                        
+                        for (let i = 0; i < this.resolution; i += 2) {
+                            for (let j = 0; j < this.resolution; j += 2) {
+                                const idx = this.IX(i, j);
+                                const vx = this.velocity.x[idx];
+                                const vy = this.velocity.y[idx];
+                                
+                                // 벡터 길이
+                                const length = Math.sqrt(vx * vx + vy * vy);
+                                
+                                // 시작점
+                                const startX = i * this.cellWidth + this.cellWidth / 2;
+                                const startY = j * this.cellHeight + this.cellHeight / 2;
+                                
+                                // 벡터 스케일링 및 끝점
+                                const scale = 5;
+                                const endX = startX + vx * scale * this.cellWidth;
+                                const endY = startY + vy * scale * this.cellHeight;
+                                
+                                // 벡터 색상 - 속도에 따라 변화
+                                // 파란색(낮음) -> 녹색(중간) -> 빨간색(높음)
+                                const normalizedSpeed = Math.min(1, length / 0.5); // 0.5를 최대 속도로 가정
+                                let r, g, b;
+                                
+                                if (normalizedSpeed < 0.5) {
+                                    // 파란색에서 녹색으로
+                                    const t = normalizedSpeed * 2;
+                                    r = 0;
+                                    g = Math.floor(t * 255);
+                                    b = Math.floor((1 - t) * 255);
+                                } else {
+                                    // 녹색에서 빨간색으로
+                                    const t = (normalizedSpeed - 0.5) * 2;
+                                    r = Math.floor(t * 255);
+                                    g = Math.floor((1 - t) * 255);
+                                    b = 0;
+                                }
+                                
+                                this.ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.7)`;
+                                
+                                // 화살표 그리기
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(startX, startY);
+                                this.ctx.lineTo(endX, endY);
+                                
+                                // 화살표 머리 그리기
+                                const headLen = 3;
+                                const angle = Math.atan2(endY - startY, endX - startX);
+                                
+                                this.ctx.lineTo(
+                                    endX - headLen * Math.cos(angle - Math.PI / 6),
+                                    endY - headLen * Math.sin(angle - Math.PI / 6)
+                                );
+                                this.ctx.moveTo(endX, endY);
+                                this.ctx.lineTo(
+                                    endX - headLen * Math.cos(angle + Math.PI / 6),
+                                    endY - headLen * Math.sin(angle + Math.PI / 6)
+                                );
+                                
+                                this.ctx.stroke();
+                            }
+                        }
+                    }
+                    
+                    // 와도 필드 그리기 (옵션)
+                    const showVorticity = document.getElementById('showVorticity').checked;
+                    if (showVorticity) {
+                        // 와도 계산
+                        let vorticity = new Array(this.resolution * this.resolution).fill(0);
+                        
+                        for (let i = 1; i < this.resolution - 1; i++) {
+                            for (let j = 1; j < this.resolution - 1; j++) {
+                                const idx = this.IX(i, j);
+                                
+                                // 와도 = ∂v/∂x - ∂u/∂y (중앙 차분 사용)
+                                vorticity[idx] = (
+                                    (this.velocity.y[this.IX(i+1, j)] - this.velocity.y[this.IX(i-1, j)]) -
+                                    (this.velocity.x[this.IX(i, j+1)] - this.velocity.x[this.IX(i, j-1)])
+                                ) / (2 * this.resolution);
+                            }
+                        }
+                        
+                        // 최소/최대 와도 찾기
+                        let minV = Infinity, maxV = -Infinity;
+                        for (let i = 0; i < vorticity.length; i++) {
+                            minV = Math.min(minV, vorticity[i]);
+                            maxV = Math.max(maxV, vorticity[i]);
+                        }
+                        
+                        // 와도 시각화 (반시계 방향 = 빨강, 시계 방향 = 파랑)
+                        for (let i = 0; i < this.resolution; i++) {
+                            for (let j = 0; j < this.resolution; j++) {
+                                const idx = this.IX(i, j);
+                                const v = vorticity[idx];
+                                
+                                if (Math.abs(v) > 0.001) {
+                                    let r = 0, g = 0, b = 0;
+                                    
+                                    if (v > 0) {
+                                        // 반시계 방향 (빨강)
+                                        r = Math.floor((v / maxV) * 255);
+                                    } else {
+                                        // 시계 방향 (파랑)
+                                        b = Math.floor((v / minV) * 255);
+                                    }
+                                    
+                                    this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
+                                    this.ctx.fillRect(
+                                        i * this.cellWidth,
+                                        j * this.cellHeight,
+                                        this.cellWidth,
+                                        this.cellHeight
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 장애물 그리기
+                    this.ctx.fillStyle = 'rgba(120, 120, 120, 0.8)';
+                    for (let i = 0; i < this.resolution; i++) {
+                        for (let j = 0; j < this.resolution; j++) {
+                            const idx = this.IX(i, j);
+                            
+                            if (this.obstacles[idx] === 1) {
+                                this.ctx.fillRect(
+                                    i * this.cellWidth,
+                                    j * this.cellHeight,
+                                    this.cellWidth,
+                                    this.cellHeight
+                                );
+                            }
+                        }
+                    }
+                }
+                
+                // 인터랙션 설정
+                setupInteraction() {
+                    let isDrawing = false;
+                    let lastX, lastY;
+                    let dragRadius = 3;
+                    let dragIntensity = 0.5;
+                    
+                    // 드래그 반경 및 강도 설정
+                    updateSliderValue('dragRadius', 'dragRadiusValue');
+                    updateSliderValue('dragIntensity', 'dragIntensityValue');
+                    
+                    document.getElementById('dragRadius').addEventListener('input', function() {
+                        dragRadius = parseInt(this.value);
+                    });
+                    
+                    document.getElementById('dragIntensity').addEventListener('input', function() {
+                        dragIntensity = parseFloat(this.value);
+                    });
+                    
+                    const getGridPos = (event) => {
+                        const rect = this.canvas.getBoundingClientRect();
+                        const x = event.clientX - rect.left;
+                        const y = event.clientY - rect.top;
+                        
+                        const i = Math.floor(x / this.cellWidth);
+                        const j = Math.floor(y / this.cellHeight);
+                        
+                        return {i, j};
+                    };
+                    
+                    // 드래그 커서 그리기
+                    const drawDragCursor = (i, j, radius) => {
+                        if (!isDrawing) return;
+                        
+                        this.ctx.beginPath();
+                        this.ctx.arc(
+                            i * this.cellWidth + this.cellWidth / 2, 
+                            j * this.cellHeight + this.cellHeight / 2, 
+                            radius * this.cellWidth, 
+                            0, 
+                            Math.PI * 2
+                        );
+                        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.stroke();
+                        
+                        // 드래그 모드에 따라 색상 변경
+                        const dragMode = document.getElementById('dragMode').value;
+                        let fillColor;
+                        
+                        switch (dragMode) {
+                            case 'force': fillColor = 'rgba(255, 165, 0, 0.3)'; break;
+                            case 'velocity': fillColor = 'rgba(0, 102, 204, 0.3)'; break;
+                            case 'vortex': fillColor = 'rgba(0, 204, 102, 0.3)'; break;
+                            case 'obstacle': fillColor = 'rgba(128, 128, 128, 0.5)'; break;
+                            case 'erase': fillColor = 'rgba(255, 0, 0, 0.3)'; break;
+                            default: fillColor = 'rgba(255, 255, 255, 0.2)';
+                        }
+                        
+                        this.ctx.fillStyle = fillColor;
+                        this.ctx.fill();
+                    };
+                    
+                    // 드래그 효과 적용
+                    const applyDragEffect = (centerI, centerJ, radius) => {
+                        const dragMode = document.getElementById('dragMode').value;
+                        if (dragMode === 'none') return;
+                        
+                        const radiusSq = radius * radius;
+                        // 영향을 받는 셀 범위 계산 (반경의 3배로 확장하여 주변 영향 계산)
+                        const influenceRadius = radius * 3;
+                        const minI = Math.max(1, centerI - influenceRadius);
+                        const maxI = Math.min(this.resolution - 2, centerI + influenceRadius);
+                        const minJ = Math.max(1, centerJ - influenceRadius);
+                        const maxJ = Math.min(this.resolution - 2, centerJ + influenceRadius);
+                        
+                        // 직접 드래그 효과 적용
+                        let touchedCells = [];
+                        for (let i = Math.max(1, centerI - radius); i < Math.min(this.resolution - 1, centerI + radius); i++) {
+                            for (let j = Math.max(1, centerJ - radius); j < Math.min(this.resolution - 1, centerJ + radius); j++) {
+                                const idx = this.IX(i, j);
+                                
+                                // 원 안에 있는지 확인
+                                const di = i - centerI;
+                                const dj = j - centerJ;
+                                const distSq = di * di + dj * dj;
+                                
+                                if (distSq > radiusSq) continue;
+                                
+                                // 중심에서의 거리에 따른 강도 계산
+                                const dist = Math.sqrt(distSq);
+                                const intensity = dragIntensity * (1 - dist / radius);
+                                
+                                let changed = false;
+                                
+                                switch (dragMode) {
+                                    case 'force':
+                                        // 중심에서 바깥쪽으로 힘 적용
+                                        const forceMag = intensity * 1.0;
+                                        if (dist > 0.001) {
+                                            const forceX = (di / dist) * forceMag;
+                                            const forceY = (dj / dist) * forceMag;
+                                            this.velocity.x[idx] += forceX;
+                                            this.velocity.y[idx] += forceY;
+                                            changed = true;
+                                        }
+                                        break;
+                                        
+                                    case 'velocity':
+                                        // 드래그 방향으로 속도 설정
+                                        const dx = centerI - lastX;
+                                        const dy = centerJ - lastY;
+                                        if (dx !== 0 || dy !== 0) {
+                                            this.velocity.x[idx] = dx * intensity * 0.5;
+                                            this.velocity.y[idx] = dy * intensity * 0.5;
+                                            changed = true;
+                                        }
+                                        break;
+                                        
+                                    case 'vortex':
+                                        // 와류 생성 (시계 방향)
+                                        const vortexStrength = intensity * 2.0;
+                                        this.velocity.x[idx] -= dj * vortexStrength;
+                                        this.velocity.y[idx] += di * vortexStrength;
+                                        changed = true;
+                                        break;
+                                        
+                                    case 'obstacle':
+                                        // 장애물 생성
+                                        this.obstacles[idx] = 1;
+                                        this.velocity.x[idx] = 0;
+                                        this.velocity.y[idx] = 0;
+                                        changed = true;
+                                        break;
+                                        
+                                    case 'erase':
+                                        // 장애물 지우기 및 속도 리셋
+                                        this.obstacles[idx] = 0;
+                                        changed = true;
+                                        break;
+                                }
+                                
+                                if (changed) {
+                                    touchedCells.push({i, j, idx});
+                                }
+                            }
+                        }
+                        
+                        // 실시간 업데이트 - 영향을 받은 지점 주변으로 벡터값 전파
+                        this.propagateChanges(touchedCells, minI, maxI, minJ, maxJ);
+                        
+                        // 속도를 저장 (이전 상태)
+                        for (let i = minI; i <= maxI; i++) {
+                            for (let j = minJ; j <= maxJ; j++) {
+                                const idx = this.IX(i, j);
+                                this.velocityPrev.x[idx] = this.velocity.x[idx];
+                                this.velocityPrev.y[idx] = this.velocity.y[idx];
+                            }
+                        }
+                    };
+                    
+                    // 주변으로 변화 전파
+                    this.propagateChanges = (touchedCells, minI, maxI, minJ, maxJ) => {
+                        if (touchedCells.length === 0) return;
+                        
+                        // 1. 부분 확산 (Diffusion) - 점성 효과를 적용하여 변화를 주변으로 전파
+                        this.partialDiffusion(minI, maxI, minJ, maxJ);
+                        
+                        // 2. 부분 압력 계산 및 투영 (Projection)
+                        this.partialProject(minI, maxI, minJ, maxJ);
+                        
+                        // 3. 경계 조건 적용
+                        this.setBoundary(this.velocity.x);
+                        this.setBoundary(this.velocity.y);
+                        
+                        // 상태 표시줄 업데이트
+                        const statusBar = document.getElementById('statusBar');
+                        const affectedCount = (maxI - minI + 1) * (maxJ - minJ + 1);
+                        statusBar.textContent = `${touchedCells.length}개 셀 변경, ${affectedCount}개 셀 연산됨`;
+                    };
+                    
+                    // 부분 확산 계산 (영향받은 영역만)
+                    this.partialDiffusion = (minI, maxI, minJ, maxJ) => {
+                        const a = this.timeStep * this.viscosity * (this.resolution - 2) * (this.resolution - 2);
+                        const iterations = 2; // 빠른 계산을 위해 반복 횟수 감소
+                        
+                        // 속도 백업
+                        let tempX = [...this.velocity.x];
+                        let tempY = [...this.velocity.y];
+                        
+                        for (let k = 0; k < iterations; k++) {
+                            for (let i = minI; i <= maxI; i++) {
+                                for (let j = minJ; j <= maxJ; j++) {
+                                    const idx = this.IX(i, j);
+                                    
+                                    // 장애물이면 건너뜀
+                                    if (this.obstacles[idx] === 1) continue;
+                                    
+                                    // 주변 4방향에서 속도 정보 가져오기
+                                    const vx_l = this.velocity.x[this.IX(i-1, j)];
+                                    const vx_r = this.velocity.x[this.IX(i+1, j)];
+                                    const vx_t = this.velocity.x[this.IX(i, j-1)];
+                                    const vx_b = this.velocity.x[this.IX(i, j+1)];
+                                    
+                                    const vy_l = this.velocity.y[this.IX(i-1, j)];
+                                    const vy_r = this.velocity.y[this.IX(i+1, j)];
+                                    const vy_t = this.velocity.y[this.IX(i, j-1)];
+                                    const vy_b = this.velocity.y[this.IX(i, j+1)];
+                                    
+                                    // 확산 공식 적용
+                                    tempX[idx] = (this.velocity.x[idx] + a * (vx_l + vx_r + vx_t + vx_b)) / (1 + 4 * a);
+                                    tempY[idx] = (this.velocity.y[idx] + a * (vy_l + vy_r + vy_t + vy_b)) / (1 + 4 * a);
+                                }
+                            }
+                            
+                            // 계산된 값 복사
+                            for (let i = minI; i <= maxI; i++) {
+                                for (let j = minJ; j <= maxJ; j++) {
+                                    const idx = this.IX(i, j);
+                                    this.velocity.x[idx] = tempX[idx];
+                                    this.velocity.y[idx] = tempY[idx];
+                                }
+                            }
+                        }
+                    };
+                    
+                    // 부분 투영 계산 (발산 제거)
+                    this.partialProject = (minI, maxI, minJ, maxJ) => {
+                        // 1. 발산 계산
+                        for (let i = minI; i <= maxI; i++) {
+                            for (let j = minJ; j <= maxJ; j++) {
+                                const idx = this.IX(i, j);
+                                
+                                // 장애물이면 건너뜀
+                                if (this.obstacles[idx] === 1) continue;
+                                
+                                // 속도 발산 계산 (∇·v)
+                                this.divergence[idx] = -0.5 * (
+                                    this.velocity.x[this.IX(i+1, j)] -
+                                    this.velocity.x[this.IX(i-1, j)] +
+                                    this.velocity.y[this.IX(i, j+1)] -
+                                    this.velocity.y[this.IX(i, j-1)]
+                                ) / this.resolution;
+                                
+                                // 압력 초기화
+                                this.pressure[idx] = 0;
+                            }
+                        }
+                        
+                        // 2. 압력 계산 (푸아송 방정식 해결)
+                        const iterations = 10; // 압력 계산 반복 횟수
+                        for (let k = 0; k < iterations; k++) {
+                            for (let i = minI; i <= maxI; i++) {
+                                for (let j = minJ; j <= maxJ; j++) {
+                                    const idx = this.IX(i, j);
+                                    
+                                    // 장애물이면 건너뜀
+                                    if (this.obstacles[idx] === 1) continue;
+                                    
+                                    // 주변 압력 및 발산 정보 사용하여 압력 계산
+                                    this.pressure[idx] = (
+                                        this.divergence[idx] +
+                                        this.pressure[this.IX(i+1, j)] +
+                                        this.pressure[this.IX(i-1, j)] +
+                                        this.pressure[this.IX(i, j+1)] +
+                                        this.pressure[this.IX(i, j-1)]
+                                    ) / 4;
+                                }
+                            }
+                        }
+                        
+                        // 3. 압력을 이용해 속도장 보정 (발산 제거)
+                        for (let i = minI; i <= maxI; i++) {
+                            for (let j = minJ; j <= maxJ; j++) {
+                                const idx = this.IX(i, j);
+                                
+                                // 장애물이면 건너뜀
+                                if (this.obstacles[idx] === 1) continue;
+                                
+                                // 압력 구배를 이용해 속도 보정
+                                this.velocity.x[idx] -= 0.5 * (
+                                    this.pressure[this.IX(i+1, j)] -
+                                    this.pressure[this.IX(i-1, j)]
+                                ) * this.resolution;
+                                
+                                this.velocity.y[idx] -= 0.5 * (
+                                    this.pressure[this.IX(i, j+1)] -
+                                    this.pressure[this.IX(i, j-1)]
+                                ) * this.resolution;
+                            }
+                        }
+                    };
+                    
+                    // 마우스 이벤트
+                    this.canvas.addEventListener('mousedown', (event) => {
+                        isDrawing = true;
+                        const {i, j} = getGridPos(event);
+                        lastX = i;
+                        lastY = j;
+                        
+                        // 드래그 효과 적용
+                        applyDragEffect(i, j, dragRadius);
+                        
+                        // 드래그 커서 그리기
+                        this.renderVectorField();
+                        drawDragCursor(i, j, dragRadius);
+                    });
+                    
+                    this.canvas.addEventListener('mousemove', (event) => {
+                        const {i, j} = getGridPos(event);
+                        
+                        // 상태 바 업데이트
+                        const statusBar = document.getElementById('statusBar');
+                        statusBar.textContent = `위치: (${i}, ${j}), 드래그 모드: ${document.getElementById('dragMode').value}`;
+                        
+                        // 커서 위치에 미리보기 표시
+                        if (!isDrawing) {
+                            // 그래프 다시 그리기 (너무 자주 호출하면 성능 저하 가능성)
+                            if ((i !== lastX || j !== lastY) && document.getElementById('dragMode').value !== 'none') {
+                                this.renderVectorField();
+                                drawDragCursor(i, j, dragRadius);
+                                lastX = i;
+                                lastY = j;
+                            }
+                            return;
+                        }
+                        
+                        // 드래그 중일 때 효과 적용
+                        if (i !== lastX || j !== lastY) {
+                            // 연속적인 효과를 위해 선을 따라 적용
+                            this.drawLine(lastX, lastY, i, j, (x, y) => {
+                                applyDragEffect(x, y, dragRadius);
+                            });
+                            
+                            // 그래프 업데이트 및 드래그 커서 그리기
+                            this.renderVectorField();
+                            drawDragCursor(i, j, dragRadius);
+                            
+                            // 실시간 벡터 분석 (추가 정보)
+                            const idx = this.IX(i, j);
+                            const vx = this.velocity.x[idx];
+                            const vy = this.velocity.y[idx];
+                            const magnitude = Math.sqrt(vx*vx + vy*vy);
+                            statusBar.textContent = `속도: (${vx.toFixed(2)}, ${vy.toFixed(2)}), 크기: ${magnitude.toFixed(2)}`;
+                        }
+                        
+                        lastX = i;
+                        lastY = j;
+                    });
+                    
+                    document.addEventListener('mouseup', () => {
+                        isDrawing = false;
+                        this.renderVectorField();  // 커서 표시 지우기 위해 다시 그리기
+                    });
+                    
+                    // 장애물 설정
+                    document.getElementById('obstacleType').addEventListener('change', (event) => {
+                        const type = event.target.value;
+                        
+                        // 장애물 초기화
+                        this.obstacles.fill(0);
+                        
+                        switch (type) {
+                            case 'circle':
+                                // 원형 장애물
+                                const centerX = Math.floor(this.resolution / 2);
+                                const centerY = Math.floor(this.resolution / 2);
+                                const radius = Math.floor(this.resolution / 8);
+                                
+                                for (let i = 0; i < this.resolution; i++) {
+                                    for (let j = 0; j < this.resolution; j++) {
+                                        const dx = i - centerX;
+                                        const dy = j - centerY;
+                                        const distance = Math.sqrt(dx * dx + dy * dy);
+                                        
+                                        if (distance < radius) {
+                                            const idx = this.IX(i, j);
+                                            this.obstacles[idx] = 1;
+                                        }
+                                    }
+                                }
+                                break;
+                                
+                            case 'square':
+                                // 사각형 장애물
+                                const size = Math.floor(this.resolution / 6);
+                                const startX = Math.floor(this.resolution / 2) - Math.floor(size / 2);
+                                const startY = Math.floor(this.resolution / 2) - Math.floor(size / 2);
+                                
+                                for (let i = startX; i < startX + size; i++) {
+                                    for (let j = startY; j < startY + size; j++) {
+                                        const idx = this.IX(i, j);
+                                        this.obstacles[idx] = 1;
+                                    }
+                                }
+                                break;
+                        }
+                    });
+                    
+                    // 경계 조건 적용
+                    document.getElementById('boundaryCondition').addEventListener('change', (event) => {
+                        this.boundaryCondition = event.target.value;
+                    });
+                    
+                    // 초기 조건 설정
+                    document.getElementById('initialCondition').addEventListener('change', (event) => {
+                        this.setInitialCondition(event.target.value);
+                        this.renderVectorField();
+                    });
+                    
+                    // 드래그 모드 추가 정보 팝업 표시
+                    document.getElementById('dragMode').addEventListener('change', (event) => {
+                        const mode = event.target.value;
+                        const statusBar = document.getElementById('statusBar');
+                        
+                        switch (mode) {
+                            case 'none':
+                                statusBar.textContent = '드래그 비활성화됨. 시뮬레이션만 관찰합니다.';
+                                break;
+                            case 'force':
+                                statusBar.textContent = '힘 모드: 드래그하여 유체에 힘을 가합니다. 주변 벡터값이 실시간으로 업데이트됩니다.';
+                                break;
+                            case 'velocity':
+                                statusBar.textContent = '속도 모드: 드래그 방향으로 유체 속도를 설정합니다. 주변으로 속도가 전파됩니다.';
+                                break;
+                            case 'vortex':
+                                statusBar.textContent = '와류 모드: 회전 운동을 만듭니다. 인접한 유체 입자들이 즉시 영향을 받습니다.';
+                                break;
+                            case 'obstacle':
+                                statusBar.textContent = '장애물 모드: 유체가 통과할 수 없는 장애물을 그립니다. 벽 주변의 유체 흐름이 즉시 변화합니다.';
+                                break;
+                            case 'erase':
+                                statusBar.textContent = '지우기 모드: 장애물을 제거합니다. 유체가 다시 흐를 수 있습니다.';
+                                break;
+                        }
+                    });
+                    
+                    // 실시간 상호작용 시 관찰용 영역 지정
+                    this.canvas.addEventListener('contextmenu', (event) => {
+                        event.preventDefault();
+                        const {i, j} = getGridPos(event);
+                        
+                        // 관찰 포인트 설정 - 이 지점에서의 벡터 변화를 주시하는 기능
+                        this.observationPoint = {i, j};
+                        const idx = this.IX(i, j);
+                        const vx = this.velocity.x[idx];
+                        const vy = this.velocity.y[idx];
+                        const magnitude = Math.sqrt(vx*vx + vy*vy);
+                        
+                        const statusBar = document.getElementById('statusBar');
+                        statusBar.textContent = `관찰 지점 설정: (${i}, ${j}) - 속도: (${vx.toFixed(2)}, ${vy.toFixed(2)}), 크기: ${magnitude.toFixed(2)}`;
+                        
+                        // 관찰 포인트 시각화
+                        this.renderVectorField();
+                        this.ctx.beginPath();
+                        this.ctx.arc(
+                            i * this.cellWidth + this.cellWidth / 2,
+                            j * this.cellHeight + this.cellHeight / 2,
+                            5,
+                            0,
+                            Math.PI * 2
+                        );
+                        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                        this.ctx.fill();
+                    });
+                    
+                    
+                    // 제어 버튼
+                    document.getElementById('startButton').addEventListener('click', () => this.start());
+                    document.getElementById('pauseButton').addEventListener('click', () => this.pause());
+                    document.getElementById('resetButton').addEventListener('click', () => this.reset());
+                    
+                    // 데이터 내보내기
+                    document.getElementById('exportDataButton').addEventListener('click', () => {
+                        this.exportData();
+                    });
+                }
+                
+                // 직선 그리기 (브레젠험 알고리즘)
+                drawLine(x0, y0, x1, y1, callback) {
+                    const dx = Math.abs(x1 - x0);
+                    const dy = Math.abs(y1 - y0);
+                    const sx = (x0 < x1) ? 1 : -1;
+                    const sy = (y0 < y1) ? 1 : -1;
+                    let err = dx - dy;
+                    
+                    while (true) {
+                        callback(x0, y0);
+                        
+                        if (x0 === x1 && y0 === y1) break;
+                        
+                        const e2 = 2 * err;
+                        if (e2 > -dy) {
+                            err -= dy;
+                            x0 += sx;
+                        }
+                        if (e2 < dx) {
+                            err += dx;
+                            y0 += sy;
+                        }
+                    }
+                }
+                
+                // 시뮬레이션 시작
+                start() {
+                    if (!this.running) {
+                        this.running = true;
+                        this.animate();
+                    }
+                }
+                
+                // 시뮬레이션 일시정지
+                pause() {
+                    this.running = false;
+                    if (this.animationFrame) {
+                        cancelAnimationFrame(this.animationFrame);
+                    }
+                }
+                
+                // 시뮬레이션 초기화
+                reset() {
+                    this.pause();
+                    
+                    // 필드 초기화
+                    this.velocity.x.fill(0);
+                    this.velocity.y.fill(0);
+                    this.velocityPrev.x.fill(0);
+                    this.velocityPrev.y.fill(0);
+                    this.pressure.fill(0);
+                    this.divergence.fill(0);
+                    
+                    // 초기 조건 다시 설정
+                    const initialCondition = document.getElementById('initialCondition').value;
+                    this.setInitialCondition(initialCondition);
+                    
+                    // 시각화 업데이트
+                    this.renderVectorField();
+                    
+                    // 시간 초기화
+                    this.time = 0;
+                }
+                
+                // 애니메이션 루프
+                animate() {
+                    if (!this.running) return;
+                    
+                    this.step();
+                    this.renderVectorField();
+                    
+                    this.animationFrame = requestAnimationFrame(() => this.animate());
+                }
+                
+                // 데이터 내보내기
+                exportData() {
+                    const data = {
+                        time: this.time,
+                        resolution: this.resolution,
+                        velocity: {
+                            x: [...this.velocity.x],
+                            y: [...this.velocity.y]
+                        },
+                        pressure: [...this.pressure],
+                        parameters: {
+                            viscosity: this.viscosity,
+                            density: this.density,
+                            timeStep: this.timeStep,
+                            iterations: this.iterations,
+                            boundaryCondition: this.boundaryCondition
+                        }
+                    };
+                    
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+                    const downloadAnchorNode = document.createElement('a');
+                    downloadAnchorNode.setAttribute("href", dataStr);
+                    downloadAnchorNode.setAttribute("download", "navier_stokes_simulation.json");
+                    document.body.appendChild(downloadAnchorNode);
+                    downloadAnchorNode.click();
+                    downloadAnchorNode.remove();
+                }
+            }
+            
+            // 시뮬레이터 인스턴스 생성
+            const simulator = new NavierStokesSimulator(canvas);
+            
+            // 초기 렌더링
+            simulator.renderVectorField();
+            
+            // 선택적으로 자동 시작
+            // simulator.start();
+        });
+    </script>
+</body>
+</html>
