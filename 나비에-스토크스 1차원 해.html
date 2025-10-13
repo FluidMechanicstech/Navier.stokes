@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1차원 나비에-스토크스 방정식 해 구하기</title>
+    <!-- MathJax CDN 추가 -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; background-color: #f5f5f5; }
+        h1 { color: #2c3e50; text-align: center; }
+        h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+        .section { background-color: #fff; padding: 15px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .equation { 
+            display: block; 
+            margin: 10px 0; 
+            padding: 10px; 
+            background-color: #ecf0f1; 
+            border-left: 4px solid #e74c3c; 
+            border-radius: 3px; 
+            font-size: 1.2em; 
+            color: #e74c3c; 
+        }
+        .step { margin-left: 20px; }
+        ul { list-style-type: none; }
+        li { margin-bottom: 10px; }
+        .highlight { background-color: #ecf0f1; padding: 5px; border-left: 4px solid #3498db; }
+        .math-inline { color: #27ae60; }
+    </style>
+</head>
+<body>
+    <h1>1차원 나비에-스토크스 방정식 해 구하기</h1>
+
+    <div class="section">
+        <h2>1. 1차원 나비에-스토크스 방정식 설정</h2>
+        <p>3차원 NS 방정식:</p>
+        <div class="equation">
+            \[
+            \rho \left( \frac{\partial \mathbf{u}}{\partial t} + (\mathbf{u} \cdot \nabla) \mathbf{u} \right) = -\nabla p + \mu \nabla^2 \mathbf{u} + \mathbf{f},
+            \]
+        </div>
+        <p>비압축성 조건: \(\nabla \cdot \mathbf{u} = 0\).</p>
+        <p>1차원 단순화 (x축, \(\mathbf{u} = (u, 0, 0)\), \(\frac{\partial}{\partial y} = 0\), \(\frac{\partial}{\partial z} = 0\)):</p>
+        <div class="equation">
+            \[
+            \rho \left( \frac{\partial u}{\partial t} + u \frac{\partial u}{\partial x} \right) = -\frac{\partial p}{\partial x} + \mu \frac{\partial^2 u}{\partial x^2} + f_x,
+            \]
+        </div>
+        <p>비압축성 조건 (특수 경우): \(\frac{\partial u}{\partial x} = 0\).</p>
+    </div>
+
+    <div class="section">
+        <h2>2. 항 분리 과정 (상세)</h2>
+        <p>각 항을 명확히 분리하여 분석합니다. 스토크스 흐름 가정(대류항 무시, \(f_x = 0\))을 적용한 후 진행합니다.</p>
+        <ul>
+            <li class="highlight">
+                <strong>관성항 (Inertial Term):</strong>
+                <div class="equation">
+                    \[
+                    \rho \frac{\partial u}{\partial t}
+                    \]
+                </div>
+                <p>시간에 따른 속도의 변화, 유체의 관성 효과를 나타냅니다.</p>
+            </li>
+            <li class="highlight">
+                <strong>대류항 (Convective Term):</strong>
+                <div class="equation">
+                    \[
+                    \rho u \frac{\partial u}{\partial x}
+                    \]
+                </div>
+                <p>비선형 항으로, 유체의 자가이동에 의한 운동량 전달. 스토크스 가정에서 \(\approx 0\)으로 무시.</p>
+            </li>
+            <li class="highlight">
+                <strong>압력항 (Pressure Term):</strong>
+                <div class="equation">
+                    \[
+                    -\frac{\partial p}{\partial x}
+                    \]
+                </div>
+                <p>압력 구배에 의한 힘, 1차원에서 x 방향으로 작용.</p>
+            </li>
+            <li class="highlight">
+                <strong>점성항 (Viscous Term):</strong>
+                <div class="equation">
+                    \[
+                    \mu \frac{\partial^2 u}{\partial x^2}
+                    \]
+                </div>
+                <p>유체의 점성에 의한 내부 마찰력, 2차 공간 미분으로 표현.</p>
+            </li>
+            <li class="highlight">
+                <strong>외력항 (External Force Term):</strong>
+                <div class="equation">
+                    \[
+                    f_x
+                    \]
+                </div>
+                <p>외부 힘(예: 중력), 스토크스 가정에서 \(f_x = 0\)으로 간주.</p>
+            </li>
+        </ul>
+        <p>스토크스 가정 적용 후:</p>
+        <div class="equation">
+            \[
+            \rho \frac{\partial u}{\partial t} = -\frac{\partial p}{\partial x} + \mu \frac{\partial^2 u}{\partial x^2}.
+            \]
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>3. 연립방정식 구성</h2>
+        <p>1차원 NS 방정식은 단일 방정식으로 간소화되며, 압력 \(p\)와 속도 \(u\)의 관계를 명시하려면 연립 형태로 간주:</p>
+        <ul>
+            <li><strong>모멘텀 방정식:</strong>
+                <div class="equation">
+                    \[
+                    \rho \frac{\partial u}{\partial t} + \rho u \frac{\partial u}{\partial x} = -\frac{\partial p}{\partial x} + \mu \frac{\partial^2 u}{\partial x^2} + f_x,
+                    \]
+                </div>
+            </li>
+            <li><strong>비압축성 조건 (특수 경우):</strong>
+                <div class="equation">
+                    \[
+                    \frac{\partial u}{\partial x} = 0,
+                    \]
+                </div>
+                <p>(유속이 x에 무관하거나 경계 조건으로 처리).</p>
+            </li>
+        </ul>
+        <p>스토크스 가정 적용:</p>
+        <div class="equation">
+            \[
+            \rho \frac{\partial u}{\partial t} = -\frac{\partial p}{\partial x} + \mu \frac{\partial^2 u}{\partial x^2}.
+            \]
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>4. 편미분 및 선형 변환 과정</h2>
+        <p>해를 구하기 위해 편미분과 선형 변환을 순서대로 적용합니다.</p>
+        <div class="step">
+            <h3>단계 1: 비선형 항 제거 (선형화)</h3>
+            <p>대류항 \(\rho u \frac{\partial u}{\partial x}\)을 스토크스 가정(\(u \frac{\partial u}{\partial x} \approx 0\))으로 무시:</p>
+            <div class="equation">
+                \[
+                \rho \frac{\partial u}{\partial t} = -\frac{\partial p}{\partial x} + \mu \frac{\partial^2 u}{\partial x^2}.
+                \]
+            </div>
+        </div>
+        <div class="step">
+            <h3>단계 2: 편미분 방정식 분석</h3>
+            <p>시간 미분(\(\frac{\partial u}{\partial t}\))과 2차 공간 미분(\(\frac{\partial^2 u}{\partial x^2}\)) 포함. 압력 항은 독립 변수로 처리.</p>
+        </div>
+        <div class="step">
+            <h3>단계 3: 변수를 분리 (Separation of Variables)</h3>
+            <p>\(u(x,t) = X(x) T(t)\)로 가정:</p>
+            <div class="equation">
+                \[
+                \rho \frac{\partial (X T)}{\partial t} = -\frac{\partial (X T p)}{\partial x} + \mu \frac{\partial^2 (X T)}{\partial x^2}.
+                \]
+            </div>
+            <ul>
+                <li>시간 미분: \(\rho X \frac{d T}{d t}\)</li>
+                <li>공간 미분: \(-\frac{\partial p}{\partial x} X T + \mu T \frac{d^2 X}{d x^2}\)</li>
+            </ul>
+            <p>분리 상수 \(\lambda\) 적용:</p>
+            <div class="equation">
+                \[
+                \frac{1}{T} \frac{d T}{d t} = \frac{\mu}{\rho} \frac{1}{X} \frac{d^2 X}{d x^2} - \frac{1}{\rho X} \frac{\partial p}{\partial x} = -\lambda.
+                \]
+            </div>
+        </div>
+        <div class="step">
+            <h3>단계 4: 시간 및 공간 방정식</h3>
+            <ul>
+                <li>시간 방정식:
+                    <div class="equation">
+                        \[
+                        \frac{d T}{d t} = -\lambda T \quad \Rightarrow \quad T(t) = T_0 e^{-\lambda t}.
+                        \]
+                    </div>
+                </li>
+                <li>공간 방정식:
+                    <p>압력 \(\frac{\partial p}{\partial x}\)를 상수(\(p = p_0\))로 가정 후:</p>
+                    <div class="equation">
+                        \[
+                        \frac{d^2 X}{d x^2} - \frac{\rho \lambda}{\mu} X = 0.
+                        \]
+                    </div>
+                    <p>특성 방정식: \(r^2 - \frac{\rho \lambda}{\mu} = 0\), \(r = \pm \sqrt{\frac{\rho \lambda}{\mu}}\).</p>
+                    <p>해: \(X(x) = A e^{\sqrt{\frac{\rho \lambda}{\mu}} x} + B e^{-\sqrt{\frac{\rho \lambda}{\mu}} x}\).</p>
+                </li>
+            </ul>
+        </div>
+        <div class="step">
+            <h3>단계 5: 경계조건 적용</h3>
+            <p>평판 경계, \(x = 0\)에서 \(u = 0\), \(x = L\)에서 \(u = 0\):</p>
+            <ul>
+                <li>\(X(0) = 0\): \(A + B = 0\) → \(B = -A\).</li>
+                <li>\(X(L) = 0\): \(A e^{\sqrt{\frac{\rho \lambda}{\mu}} L} - A e^{-\sqrt{\frac{\rho \lambda}{\mu}} L} = 0\).</li>
+                <li>비자명식 해: \(\sqrt{\frac{\rho \lambda}{\mu}} L = n \pi\), \(\lambda_n = \frac{\mu n^2 \pi^2}{\rho L^2}\).</li>
+            </ul>
+            <p>전체 해:</p>
+            <div class="equation">
+                \[
+                u(x,t) = \sum_{n=1}^\infty \left( A_n e^{\sqrt{\frac{\rho \lambda_n}{\mu}} x} + B_n e^{-\sqrt{\frac{\rho \lambda_n}{\mu}} x} \right) e^{-\lambda_n t}.
+                \]
+            </div>
+        </div>
+        <div class="step">
+            <h3>단계 6: 초기 조건 맞춤</h3>
+            <p>초기 조건 \(u(x,0) = u_0(x)\)로 푸리에 계수 \(A_n, B_n\) 결정.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>5. 선형 변환 요약</h2>
+        <ol>
+            <li>비선형 대류항을 스토크스 가정으로 선형화.</li>
+            <li>변수 분리 후 시간/공간 방정식으로 변환.</li>
+            <li>경계조건으로 고유값 문제 해결.</li>
+            <li>초기 조건으로 계수 결정.</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>6. 밀레니엄 문제: 3D 전역 해 미해결성 (2025 업데이트)</h2>
+        <p>3D NS 방정식의 글로벌 부드러운 해 존재 여부, 2025년 10월 14일 오전 5:15 KST 기준 미해결. 1차원 단순화는 로컬 해 가능하나, 3D 비선형 blow-up 증명 불가.</p>
+    </div>
+
+    <div class="section">
+        <h2>7. 결론</h2>
+        <p>항 분리와 연립방정식으로 1차원 NS 방정식 구성, 스토크스 가정 하 선형화. 편미분 후 변수 분리로 해 도출, 경계조건 적용으로 구체화. 3D 해는 경계 조건 필요, 수치적 접근(FDM, FEM) 대안. 밀레니엄 문제 해결은 비선형성 해결 필요. 추가 데이터로 구체적 해 도출 가능.</p>
+    </div>
+</body>
+</html>
