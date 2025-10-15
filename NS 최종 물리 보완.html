@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1D 나비에-스토크스 방정식의 물리적으로 안정적인 해</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.7; margin: 0; padding: 0; background-color: #f9f9f9; color: #333; }
+        .container { max-width: 900px; margin: 30px auto; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background-color: #fff; }
+        h1, h2, h3 { color: #0d47a1; border-bottom: 3px solid #1976d2; padding-bottom: 12px; margin-top: 40px; }
+        h1 { font-size: 2.2em; text-align: center; }
+        .equation { background-color: #e3f2fd; border-left: 6px solid #1976d2; padding: 20px; margin: 30px 0; overflow-x: auto; font-size: 1.15em; text-align: center; border-radius: 5px; }
+        .box { background-color: #e8f5e9; border: 1px solid #4caf50; padding: 25px; margin: 30px 0; border-radius: 8px; }
+        .box h4 { margin-top: 0; color: #2e7d32; }
+        .highlight { color: #d32f2f; font-weight: bold; }
+        li { margin-bottom: 12px; }
+        .conclusion { background-color: #fffde7; border: 1px solid #fbc02d; padding: 25px; margin-top: 40px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h1>1D 나비에-스토크스 방정식의 물리적으로 안정적인 해</h1>
+    <p>본 문서는 1차원 나비에-스토크스 방정식의 해가 물리적 안정성을 갖추기 위한 필수 조건들을 통합하여 재구성한 완전한 해법을 제시합니다. 기존 풀이의 한계점이었던 유동 구동력 부재 및 경계 조건의 물리적 불균형 문제를 해결하여, 어떠한 초기 조건에서도 안정적으로 정상 상태에 도달하는 해를 유도합니다.</p>
+
+    <hr>
+
+    <h2>1. 물리적 안정성을 위한 문제 재정의</h2>
+    <p>안정적인 해를 얻기 위해 다음 두 가지 핵심 요소를 모델에 명시적으로 포함해야 합니다.</p>
+    <ol>
+        <li><strong>일정한 구동력:</strong> 유동을 지속시키는 물리적 힘인 <strong>상수 압력 구배($G$)</strong>를 도입합니다. 이는 유체에 가해지는 외부 힘의 역할을 합니다.</li>
+        <li><strong>물리적 경계 조건:</strong> 벽면에서의 마찰력(전단 응력)과 유체 속도 간의 관계를 설명하는 <strong>나비에 슬립(Navier slip)</strong> 조건을 적용합니다. 이는 벽-유체 상호작용의 물리적 균형을 보장합니다.</li>
+    </ol>
+    <p>이를 반영한 지배 방정식과 경계 조건은 다음과 같습니다.</p>
+    <div class="equation">
+        <strong>지배 방정식:</strong> \quad
+        $$ \frac{\partial u}{\partial t} = \nu \frac{\partial^2 u}{\partial y^2} + \frac{G}{\rho} $$
+        ($G \equiv -\frac{\partial p}{\partial x}$는 유동 방향으로 작용하는 압력 구배)
+    </div>
+    <div class="equation">
+        <strong>경계 조건 (나비에 슬립):</strong> \quad
+        $$ u(0,t) = L_s \frac{\partial u}{\partial y}(0,t) \quad \text{그리고} \quad u(h,t) = -L_s \frac{\partial u}{\partial y}(h,t) $$
+        ($L_s$는 슬립 길이, $L_s=0$이면 고전적인 무슬립(no-slip) 조건)
+    </div>
+
+    <hr>
+
+    <h2>2. 안정적인 정상해 ($u_s(y)$): 힘의 균형</h2>
+    <p>시간이 충분히 흘러 유동이 변하지 않는 정상 상태($\partial/\partial t = 0$)가 되면, 압력 구배에 의한 구동력과 점성에 의한 마찰력이 완벽한 균형을 이룹니다.</p>
+    <div class="equation">
+        $$ \nu \frac{d^2 u_s}{d y^2} + \frac{G}{\rho} = 0 \quad \Rightarrow \quad \frac{d^2 u_s}{d y^2} = -\frac{G}{\mu} $$
+    </div>
+    <p>이 방정식을 나비에 슬립 경계 조건 하에서 적분하면, 물리적으로 안정된 정상 상태 속도 프로파일을 얻습니다. 이 해는 <span class="highlight">압력 구배($G$)가 존재할 때만 0이 아닌 전단 응력과 속도 프로파일이 형성</span>됨을 명확히 보여줍니다.</p>
+    <div class="box">
+        <h4>힘의 균형을 만족하는 정상해:</h4>
+        $$ \boxed{u_s(y) = \frac{G}{2\mu} \left( y(h-y) + L_s h \right)} $$
+        <p>이 해는 유동을 일으키는 힘($G$)과 이에 저항하는 힘(점성, $\mu$), 그리고 벽면의 물리적 조건($L_s$)이 완벽하게 균형을 이룬 상태를 나타냅니다.</p>
+    </div>
+
+    <hr>
+
+    <h2>3. 과도해 ($u_t(y,t)$): 시간적 안정성 보장</h2>
+    <p>임의의 초기 상태에서 안정적인 정상 상태로 수렴하는 과정을 설명하는 과도해는 전체 해 $u(y,t) = u_s(y) + u_t(y,t)$에서 유도됩니다. 과도해 $u_t$는 외부 힘이 없는 순수 확산 방정식을 따릅니다.</p>
+    <div class="equation">
+        $$ \frac{\partial u_t}{\partial t} = \nu \frac{\partial^2 u_t}{\partial y^2} $$
+    </div>
+    <p>이 해는 변수 분리법을 통해 고유 함수(eigenfunction)의 급수로 표현됩니다.</p>
+    <div class="equation">
+        $$ u_t(y,t) = \sum_{n=1}^\infty B_n \phi_n(y) e^{-\nu \lambda_n t} $$
+    </div>
+    <p>여기서 핵심은 고유치($\lambda_n$)입니다. 이 시스템은 수학적으로 <strong>슈투름-리우빌(Sturm-Liouville) 이론</strong>에 의해 기술되며, 이 이론은 물리적으로 타당한 경계 조건 하에서 <span class="highlight">모든 고유치 $\lambda_n$이 양수($\lambda_n > 0$)임을 수학적으로 보장</span>합니다.</p>
+    <div class="box">
+        <h4>시간적 안정성 보장:</h4>
+        <p>모든 고유치 $\lambda_n$이 양수이므로, 과도해의 모든 모드($e^{-\nu \lambda_n t}$)는 시간이 지남에 따라 <strong>반드시 지수적으로 0으로 감쇠</strong>합니다. 이는 어떠한 형태의 초기 교란($u_t(y,0)$)도 결국 사라지고, 시스템이 유일하고 안정적인 정상해($u_s(y)$)로 수렴함을 의미합니다.</p>
+    </div>
+
+    <hr>
+
+    <h2>4. 최종 안정해 및 결론</h2>
+    <p>위의 분석을 종합하면, 물리적으로 안정하고 한계점이 없는 1차원 나비에-스토크스 방정식의 완전해는 다음과 같습니다.</p>
+    <div class="conclusion">
+        <h3>물리적으로 완벽히 안정된 최종 해:</h3>
+        <div class="equation">
+            $$ \boxed{ u(y,t) = \underbrace{\frac{G}{2\mu}\Big(y(h-y) + L_s h\Big)}_{\text{안정적 정상해 (힘의 균형)}} + \underbrace{\sum_{n=1}^\infty B_n \phi_n(y) e^{-\nu \lambda_n t}}_{\text{안정적 과도해 (시간적 수렴)}} } $$
+        </div>
+        <p><strong>이 해는 다음과 같은 이유로 물리적 한계점이 없습니다:</strong></p>
+        <ul>
+            <li><strong>인과성 확보:</strong> 명확한 구동력($G$)이 존재하여 유동의 원인과 결과를 물리적으로 올바르게 연결합니다.</li>
+            <li><strong>경계에서의 힘 균형:</strong> 나비에 슬립 조건은 벽면에서의 속도와 전단 응력 사이의 물리적 관계를 정확히 모델링합니다.</li>
+            <li><strong>시간적 수렴성 보장:</strong> 수학적 이론(슈투름-리우빌)에 의해 모든 초기 조건에서 안정적인 정상 상태로의 수렴이 보장됩니다.</li>
+        </ul>
+        <p>따라서, 이 모델은 저 레이놀즈 수 영역에서 1차원 평행판 유동의 거동을 물리적으로 안정하고 완전하게 설명합니다.</p>
+    </div>
+
+</div>
+</body>
+</html>
