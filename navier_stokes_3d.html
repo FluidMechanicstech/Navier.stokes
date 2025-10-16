@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나비에-스토크스 방정식 연립 풀이 및 수식 렌더링</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            line-height: 1.8;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 800;
+        }
+        
+        h2 {
+            color: #764ba2;
+            font-size: 1.8em;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            font-weight: 700;
+        }
+        
+        h3 {
+            color: #5a67d8;
+            font-size: 1.4em;
+            margin: 30px 0 15px 0;
+            font-weight: 600;
+        }
+        
+        .intro {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+        
+        .equation-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-size: 1.3em;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+            overflow-x: auto;
+        }
+        
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-style: italic;
+        }
+        
+        .highlight {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .process-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .process-step {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 10px;
+            min-width: 200px;
+            text-align: center;
+            border: 2px solid #667eea;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        tr:hover {
+            background: #f5f5f5;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌊 3D 나비에-스토크스 방정식 진동 해 상세 풀이</h1>
+        
+        <div class="intro">
+            <p><strong>📚 이 문서는 무엇인가요?</strong></p>
+            <p>나비에-스토크스 방정식은 유체(물, 공기 등)가 어떻게 흐르는지를 설명하는 핵심 공식입니다. 이 문서는 수학에 익숙하지 않은 분들도 이해할 수 있도록 단계별로 풀이 과정을 설명합니다.</p>
+            <p><strong>📅 작성일:</strong> 2025년 10월 17일 금요일</p>
+        </div>
+
+        <!-- 1. Helmholtz 방정식 -->
+        <div class="section">
+            <h2>1️⃣ Helmholtz 방정식 - 압력 계산의 기초</h2>
+            
+            <div class="equation-box">
+                $$\nabla^2 \phi = 0, \quad p = -\nabla \phi$$
+            </div>
+            
+            <h3>📖 각 항의 의미</h3>
+            <table>
+                <tr>
+                    <th>기호</th>
+                    <th>의미</th>
+                    <th>직관적 설명</th>
+                </tr>
+                <tr>
+                    <td>\(\phi\)</td>
+                    <td>속도 포텐셜</td>
+                    <td>압력을 만들어내는 "잠재력"</td>
+                </tr>
+                <tr>
+                    <td>\(\nabla^2\phi\)</td>
+                    <td>라플라시안</td>
+                    <td>주위로 퍼지는 정도 측정</td>
+                </tr>
+                <tr>
+                    <td>\(p\)</td>
+                    <td>압력</td>
+                    <td>유체가 밀어내는 힘</td>
+                </tr>
+                <tr>
+                    <td>\(-\nabla\phi\)</td>
+                    <td>포텐셜의 기울기</td>
+                    <td>압력이 변하는 방향과 크기</td>
+                </tr>
+            </table>
+            
+            <div class="highlight">
+                <strong>🔍 3차원 전개:</strong>
+                <div class="equation-box">
+                    $$p = -\frac{\partial \phi}{\partial x} - \frac{\partial \phi}{\partial y} - \frac{\partial \phi}{\partial z}$$
+                </div>
+                <p>압력은 x, y, z 방향으로 φ가 변하는 정도의 합으로 결정됩니다.</p>
+            </div>
+            
+            <div class="note">
+                <strong>💡 핵심:</strong> 이 방정식은 선형입니다. 즉, 덧셈과 곱셈만으로 계산할 수 있어 비교적 쉽게 풀 수 있습니다.
+            </div>
+        </div>
+
+        <!-- 2. 연립방정식 상세 풀이 -->
+        <div class="section">
+            <h2>2️⃣ 연립방정식 단계별 풀이</h2>
+            <p>5개의 방정식을 순차적으로 풀어 최종 해를 구합니다. 각 방정식은 유체 운동의 다른 측면을 다룹니다.</p>
+            
+            <!-- 2.1 Euler 방정식 -->
+            <h3>2.1 Euler 방정식 (점성 무시)</h3>
+            
+            <div class="equation-box">
+                $$\rho \frac{\partial \mathbf{u}}{\partial t} = -\nabla p + \rho \mathbf{f}$$
+            </div>
+            
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>방정식의 물리적 의미</strong>
+                <p>이 방정식은 유체의 "관성"만 고려합니다. 끈적거림(점성)은 무시하고, 시간에 따라 속도가 어떻게 변하는지만 봅니다.</p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>각 항 분석</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>\(\rho \frac{\partial \mathbf{u}}{\partial t}\) : 질량 × 가속도 (뉴턴의 제2법칙)</li>
+                    <li>\(-\nabla p\) : 압력이 낮은 쪽으로 미는 힘</li>
+                    <li>\(\rho \mathbf{f}\) : 중력 같은 외부 힘</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>1차원으로 단순화</strong>
+                <div class="equation-box">
+                    $$\rho \frac{\partial u}{\partial t} = -\frac{\partial p}{\partial x} + \rho f$$
+                </div>
+                <p>압력 기울기를 상수 \(G = -\frac{\partial p}{\partial x} + \rho f\)로 놓으면:</p>
+                <div class="equation-box">
+                    $$\frac{\partial u}{\partial t} = \frac{G}{\rho}$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>해 구하기</strong>
+                <p>시간에 대해 적분하면:</p>
+                <div class="equation-box">
+                    $$u(t) = \frac{G}{\rho} t + u_0$$
+                </div>
+                <p>여기서 \(u_0\)는 초기 속도입니다.</p>
+            </div>
+            
+            <div class="note">
+                <strong>⚠️ 문제점:</strong> 이 해는 속도가 시간에 따라 무한히 증가합니다. 실제로는 점성 때문에 속도가 제한되므로, 이 모델은 매우 짧은 시간에만 유효합니다.
+            </div>
+
+            <!-- 2.2 Stokes 방정식 -->
+            <h3>2.2 Stokes 방정식 (관성 무시)</h3>
+            
+            <div class="equation-box">
+                $$0 = -\nabla p + \mu \nabla^2 \mathbf{u} + \rho \mathbf{f}$$
+            </div>
+            
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>방정식의 특징</strong>
+                <p>시간 변화 항(\(\frac{\partial \mathbf{u}}{\partial t}\))이 0입니다. 이는 유체가 천천히, 정상 상태로 흐를 때를 나타냅니다.</p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>1차원 변환</strong>
+                <div class="equation-box">
+                    $$0 = -\frac{\partial p}{\partial x} + \mu \frac{\partial^2 u}{\partial y^2} + \rho f$$
+                </div>
+                <p>\(\mu \frac{\partial^2 u}{\partial y^2}\)는 점성이 속도를 부드럽게 만드는 효과입니다.</p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>미분방정식 정리</strong>
+                <p>\(G = -\frac{\partial p}{\partial x} + \rho f\)로 놓으면:</p>
+                <div class="equation-box">
+                    $$\frac{\partial^2 u}{\partial y^2} = -\frac{G}{\mu}$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>첫 번째 적분</strong>
+                <div class="equation-box">
+                    $$\frac{\partial u}{\partial y} = -\frac{G}{\mu} y + C_1$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">5</span>
+                <strong>두 번째 적분</strong>
+                <div class="equation-box">
+                    $$u(y) = -\frac{G}{2\mu} y^2 + C_1 y + C_2$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">6</span>
+                <strong>경계 조건 적용</strong>
+                <p>벽에서는 속도가 0: \(u(0) = 0\), \(u(h) = 0\)</p>
+                <p>이를 적용하면:</p>
+                <div class="equation-box">
+                    $$u_s(y) = \frac{G}{2\mu} y(h - y)$$
+                </div>
+                <p>이것이 유명한 <strong>포아즈유 유동(Poiseuille flow)</strong> 해입니다!</p>
+            </div>
+            
+            <div class="highlight">
+                <strong>📊 속도 분포:</strong> 중간(y = h/2)에서 최대, 벽(y = 0, h)에서 0인 포물선 형태
+            </div>
+
+            <!-- 2.3 Momentum 방정식 -->
+            <h3>2.3 운동량 방정식 (외력 무시)</h3>
+            
+            <div class="equation-box">
+                $$\rho \frac{\partial \mathbf{u}}{\partial t} = -\nabla p + \mu \nabla^2 \mathbf{u}$$
+            </div>
+            
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>단순화 가정</strong>
+                <p>외부 힘을 무시하고, 압력 기울기도 0이라고 가정합니다:</p>
+                <div class="equation-box">
+                    $$\frac{\partial u}{\partial t} = \nu \frac{\partial^2 u}{\partial y^2}$$
+                </div>
+                <p>여기서 \(\nu = \mu/\rho\)는 동점성계수입니다.</p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>변수 분리</strong>
+                <p>해를 \(u(y,t) = \phi(y) T(t)\) 형태로 가정:</p>
+                <div class="equation-box">
+                    $$\frac{1}{T}\frac{dT}{dt} = \nu \frac{1}{\phi}\frac{d^2\phi}{dy^2} = -\nu\lambda$$
+                </div>
+                <p>\(\lambda\)는 분리 상수입니다.</p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>시간 부분 풀기</strong>
+                <div class="equation-box">
+                    $$\frac{dT}{dt} = -\nu\lambda T \quad \Rightarrow \quad T(t) = e^{-\nu\lambda t}$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>공간 부분 풀기</strong>
+                <div class="equation-box">
+                    $$\frac{d^2\phi}{dy^2} + \lambda\phi = 0$$
+                </div>
+                <p>일반해:</p>
+                <div class="equation-box">
+                    $$\phi(y) = A\cos(\sqrt{\lambda}y) + B\sin(\sqrt{\lambda}y)$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">5</span>
+                <strong>경계 조건 적용</strong>
+                <p>\(\phi(0) = 0\) → \(A = 0\)</p>
+                <p>\(\phi(h) = 0\) → \(\sin(\sqrt{\lambda}h) = 0\) → \(\lambda_n = \left(\frac{n\pi}{h}\right)^2\)</p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">6</span>
+                <strong>최종 해 (푸리에 급수)</strong>
+                <div class="equation-box">
+                    $$u(y,t) = \sum_{n=1}^{\infty} B_n \sin\left(\frac{n\pi y}{h}\right) e^{-\nu\lambda_n t}$$
+                </div>
+                <p>여기서 \(B_n\)은 초기 조건으로 결정됩니다.</p>
+            </div>
+            
+            <div class="note">
+                <strong>🎯 의미:</strong> 시간이 지나면서 모든 항이 지수적으로 감소합니다. 즉, 유체가 점점 멈춥니다!
+            </div>
+
+            <!-- 2.4 선형화된 대류 -->
+            <h3>2.4 선형화된 대류 방정식</h3>
+            
+            <div class="equation-box">
+                $$\rho \frac{\partial \mathbf{u}}{\partial t} + \rho (\mathbf{u}_0 \cdot \nabla \mathbf{u} + \mathbf{u} \cdot \nabla \mathbf{u}_0) = -\nabla p + \mu \nabla^2 \mathbf{u} + \rho \mathbf{f}$$
+            </div>
+            
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>대류 항의 선형화</strong>
+                <p>원래 비선형 항 \(\mathbf{u} \cdot \nabla \mathbf{u}\)를 평균 속도 \(\mathbf{u}_0\) 주위로 선형화:</p>
+                <div class="equation-box">
+                    $$\mathbf{u} \cdot \nabla \mathbf{u} \approx \mathbf{u}_0 \cdot \nabla \mathbf{u} + \mathbf{u} \cdot \nabla \mathbf{u}_0$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>1차원 x-방향 흐름</strong>
+                <p>\(\mathbf{u}_0 = (u_0, 0, 0)\)이라 가정하고, y-방향 변화만 고려:</p>
+                <div class="equation-box">
+                    $$\frac{\partial u}{\partial t} + u_0 \frac{\partial u}{\partial x} = -\frac{1}{\rho}\frac{\partial p}{\partial x} + \nu \frac{\partial^2 u}{\partial y^2} + f$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>파동 해 가정</strong>
+                <p>진동하며 전파되는 해를 찾기 위해:</p>
+                <div class="equation-box">
+                    $$u(x,y,t) = A \sin(k_y y) e^{i(k_x x - \omega t)}$$
+                </div>
+                <p>여기서:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>\(k_x\): x-방향 파수</li>
+                    <li>\(k_y\): y-방향 파수</li>
+                    <li>\(\omega\): 각진동수</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>대입 및 정리</strong>
+                <p>파동 해를 방정식에 대입하면:</p>
+                <div class="equation-box">
+                    $$-i\omega A + ik_x u_0 A = -\frac{1}{\rho}\frac{\partial p}{\partial x} - \nu k_y^2 A$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">5</span>
+                <strong>분산 관계식 도출</strong>
+                <p>압력 항을 무시하거나 별도로 처리하면:</p>
+                <div class="equation-box">
+                    $$\omega = k_x u_0 - i\nu k_y^2$$
+                </div>
+                <p>이것이 <strong>복소 진동수</strong>입니다!</p>
+            </div>
+            
+            <div class="highlight">
+                <strong>🔍 복소 진동수의 의미:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>실수부</strong> \(k_x u_0\): 파동이 평균 흐름을 따라 전파</li>
+                    <li><strong>허수부</strong> \(-i\nu k_y^2\): 점성으로 인한 감쇠</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">6</span>
+                <strong>최종 해의 형태</strong>
+                <div class="equation-box">
+                    $$u(x,y,t) = A \sin(k_y y) e^{i k_x(x - u_0 t)} e^{-\nu k_y^2 t}$$
+                </div>
+                <p>진동하면서 전파되고, 동시에 감쇠합니다!</p>
+            </div>
+
+            <!-- 2.5 Helmholtz -->
+            <h3>2.5 Helmholtz 분해를 통한 압력 계산</h3>
+            
+            <div class="equation-box">
+                $$\nabla^2 \phi = 0, \quad p = -\nabla \phi$$
+            </div>
+            
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>포텐셜 함수 가정</strong>
+                <p>속도와 같은 파동 형태:</p>
+                <div class="equation-box">
+                    $$\phi(x,y,t) = C \sin(k_y y) e^{i(k_x x - \omega t)}$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>라플라시안 계산</strong>
+                <div class="equation-box">
+                    $$\nabla^2 \phi = \frac{\partial^2 \phi}{\partial x^2} + \frac{\partial^2 \phi}{\partial y^2} = (-k_x^2 - k_y^2) \phi$$
+                </div>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>조건 확인</strong>
+                <p>\(\nabla^2 \phi = 0\)이 되려면:</p>
+                <div class="equation-box">
+                    $$k_x^2 + k_y^2 = 0$$
+                </div>
+                <p>이는 2D에서 성립하며, 3D로 확장 시 z-방향도 고려해야 합니다.</p>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>압력 계산</strong>
+                <div class="equation-box">
+                    $$p = -\frac{\partial \phi}{\partial x} = ik_x C \sin(k_y y) e^{i(k_x x - \omega t)}$$
+                </div>
+            </div>
+            
+            <div class="note">
+                <strong>💡 활용:</strong> 이 방법으로 압력을 속도와 독립적으로 계산할 수 있어, 수치해석에서 매우 유용합니다.
+            </div>
+        </div>
+
+        <!-- 3. 최종 3D 진동 해 -->
+        <div class="section">
+            <h2>3️⃣ 최종 3D 진동 해</h2>
+            
+            <div class="process-flow">
+                <div class="process-step">
+                    <strong>초기 조건</strong>
+                    <p>속도 및 압력 분포</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="process-step">
+                    <strong>파동 전파</strong>
+                    <p>\(e^{i(k_x x - \omega t)}\)</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="process-step">
+                    <strong>점성 감쇠</strong>
+                    <p>\(e^{-\nu k^2 t}\)</p>
+                </div>
+            </div>
+            
+            <h3>속도장</h3>
+            <div class="equation-box">
+                $$u(x,y,t) = A \sin(k_y y) \exp\left[i(k_x x - \omega t)\right] \exp\left[-\nu k^2 t\right]$$
+            </div>
+            
+            <h3>압력장</h3>
+            <div class="equation-box">
+                $$p(x,y,t) = B \sin(k_y y) \exp\left[i(k_x x - \omega t)\right] \exp\left[-\nu k^2 t\right]$$
+            </div>
+            
+            <h3>분산 관계</h3>
+            <div class="equation-box">
+                $$\omega = k_x u_0 - i\nu k^2$$
+            </div>
+            <p style="text-align: center;">여기서 \(k^2 = k_x^2 + k_y^2 + k_z^2\)는 전체 파수의 제곱입니다.</p>
+            
+            <div class="highlight">
+                <strong>📈 해의 특성 분석:</strong>
+                <table>
+                    <tr>
+                        <th>요소</th>
+                        <th>수식</th>
+                        <th>물리적 의미</th>
+                    </tr>
+                    <tr>
+                        <td>진폭</td>
+                        <td>\(A\), \(B\)</td>
+                        <td>초기 조건에 의해 결정</td>
+                    </tr>
+                    <tr>
+                        <td>공간 진동</td>
+                        <td>\(\sin(k_y y)\)</td>
+                        <td>y-방향으로 물결 형태</td>
+                    </tr>
+                    <tr>
+                        <td>전파</td>
+                        <td>\(\exp[i(k_x x - \omega t)]\)</td>
+                        <td>x-방향으로 이동하는 파동</td>
+                    </tr>
+                    <tr>
+                        <td>감쇠</td>
+                        <td>\(\exp[-\nu k^2 t]\)</td>
+                        <td>시간에 따라 에너지 소실</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="step">
+                <span class="step-number">📊</span>
+                <strong>실수부와 허수부 분리</strong>
+                <p>오일러 공식 \(e^{i\theta} = \cos\theta + i\sin\theta\)를 사용하면:</p>
+                <div class="equation-box">
+                    $u_{\text{실제}}(x,y,t) = A \sin(k_y y) \cos(k_x x - \omega_r t) e^{-\nu k^2 t}$
+                </div>
+                <p>여기서 \(\omega_r = k_x u_0\)는 실제 진동수입니다.</p>
+            </div>
+            
+            <div class="note">
+                <strong>🎯 핵심 결론:</strong> 이 해는 유체가 평균 속도 \(u_0\)로 흐르면서 동시에 진동하고, 점성 때문에 시간이 지나면서 점점 약해지는 모습을 보여줍니다. 이것이 바로 난류에서 소용돌이(vortex)가 사라지는 과정을 설명하는 기본 메커니즘입니다!
+            </div>
+        </div>
+
+        <!-- 4. 연립방정식 전체 흐름도 -->
+        <div class="section">
+            <h2>4️⃣ 연립방정식 풀이 전체 흐름도</h2>
+            
+            <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <h3 style="text-align: center; color: #667eea;">문제 설정</h3>
+                <div class="equation-box">
+                    $\text{원본 나비에-스토크스 방정식}$
+                    $\rho\frac{\partial \mathbf{u}}{\partial t} + \rho(\mathbf{u} \cdot \nabla)\mathbf{u} = -\nabla p + \mu \nabla^2 \mathbf{u} + \rho \mathbf{f}$
+                </div>
+                
+                <div style="text-align: center; font-size: 2em; color: #667eea; margin: 20px 0;">⬇️</div>
+                
+                <h3 style="text-align: center; color: #764ba2;">단계별 근사</h3>
+                
+                <div class="process-flow" style="flex-direction: column;">
+                    <div class="process-step" style="width: 80%; background: #e3f2fd;">
+                        <strong>Step 1: Euler 방정식</strong>
+                        <p>점성 제거 (\(\mu = 0\))</p>
+                        <p style="font-size: 0.9em; color: #666;">→ 선형 성장 해, 비현실적</p>
+                    </div>
+                    
+                    <div class="arrow" style="transform: rotate(90deg); margin: 10px 0;">→</div>
+                    
+                    <div class="process-step" style="width: 80%; background: #f3e5f5;">
+                        <strong>Step 2: Stokes 방정식</strong>
+                        <p>관성 제거 (\(\frac{\partial}{\partial t} = 0\), \(\mathbf{u} \cdot \nabla = 0\))</p>
+                        <p style="font-size: 0.9em; color: #666;">→ 정상 상태 포물선 해</p>
+                    </div>
+                    
+                    <div class="arrow" style="transform: rotate(90deg); margin: 10px 0;">→</div>
+                    
+                    <div class="process-step" style="width: 80%; background: #fff3e0;">
+                        <strong>Step 3: 운동량 방정식</strong>
+                        <p>외력 및 압력 기울기 제거</p>
+                        <p style="font-size: 0.9em; color: #666;">→ 감쇠하는 푸리에 급수 해</p>
+                    </div>
+                    
+                    <div class="arrow" style="transform: rotate(90deg); margin: 10px 0;">→</div>
+                    
+                    <div class="process-step" style="width: 80%; background: #e8f5e9;">
+                        <strong>Step 4: 선형화된 대류</strong>
+                        <p>비선형 항 선형화 (\(\mathbf{u} \cdot \nabla \rightarrow \mathbf{u}_0 \cdot \nabla\))</p>
+                        <p style="font-size: 0.9em; color: #666;">→ 전파하며 감쇠하는 파동 해</p>
+                    </div>
+                    
+                    <div class="arrow" style="transform: rotate(90deg); margin: 10px 0;">→</div>
+                    
+                    <div class="process-step" style="width: 80%; background: #fce4ec;">
+                        <strong>Step 5: Helmholtz 분해</strong>
+                        <p>압력 독립 계산</p>
+                        <p style="font-size: 0.9em; color: #666;">→ 완전한 3D 진동 해</p>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; font-size: 2em; color: #667eea; margin: 20px 0;">⬇️</div>
+                
+                <h3 style="text-align: center; color: #667eea;">최종 해</h3>
+                <div class="equation-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                    $u(x,y,t) = A \sin(k_y y) e^{i(k_x x - \omega t)} e^{-\nu k^2 t}$
+                    $\omega = k_x u_0 - i\nu k^2$
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 각 항의 기여도 분석 -->
+        <div class="section">
+            <h2>5️⃣ 각 물리량의 역할과 기여도</h2>
+            
+            <h3>관성 항 (Inertia Term)</h3>
+            <div class="step">
+                <strong>수식:</strong> \(\rho \frac{\partial \mathbf{u}}{\partial t}\)
+                <p><strong>의미:</strong> 유체가 가속되거나 감속될 때의 저항</p>
+                <p><strong>효과:</strong> 속도 변화를 일으키는 주요 원인</p>
+                <p><strong>Euler 방정식에서:</strong> 유일한 시간 변화 항으로, 선형 성장 유도</p>
+            </div>
+            
+            <h3>대류 항 (Convection Term)</h3>
+            <div class="step">
+                <strong>수식:</strong> \(\rho (\mathbf{u} \cdot \nabla)\mathbf{u}\)
+                <p><strong>의미:</strong> 유체가 이동하면서 운동량을 전달</p>
+                <p><strong>효과:</strong> 비선형성의 원천, 난류 발생의 핵심</p>
+                <p><strong>선형화:</strong> \(\mathbf{u}_0 \cdot \nabla \mathbf{u}\)로 근사하여 파동 전파 표현</p>
+            </div>
+            
+            <h3>압력 기울기 항 (Pressure Gradient)</h3>
+            <div class="step">
+                <strong>수식:</strong> \(-\nabla p\)
+                <p><strong>의미:</strong> 압력이 높은 곳에서 낮은 곳으로 미는 힘</p>
+                <p><strong>효과:</strong> 유체를 가속시키는 주요 구동력</p>
+                <p><strong>Helmholtz 분해:</strong> 속도와 독립적으로 계산 가능</p>
+            </div>
+            
+            <h3>점성 항 (Viscous Term)</h3>
+            <div class="step">
+                <strong>수식:</strong> \(\mu \nabla^2 \mathbf{u}\)
+                <p><strong>의미:</strong> 유체의 끈적거림으로 인한 확산</p>
+                <p><strong>효과:</strong> 속도를 부드럽게 만들고 에너지를 소산</p>
+                <p><strong>최종 해에서:</strong> \(e^{-\nu k^2 t}\) 감쇠 항으로 나타남</p>
+            </div>
+            
+            <h3>체적력 항 (Body Force)</h3>
+            <div class="step">
+                <strong>수식:</strong> \(\rho \mathbf{f}\)
+                <p><strong>의미:</strong> 중력, 전자기력 등 외부에서 작용하는 힘</p>
+                <p><strong>효과:</strong> 지속적인 구동력 제공</p>
+                <p><strong>1D 해석:</strong> 압력 기울기와 합쳐져 \(G/\rho\)로 표현</p>
+            </div>
+        </div>
+
+        <!-- 6. 무차원 수와 물리적 해석 -->
+        <div class="section">
+            <h2>6️⃣ 레이놀즈 수와 흐름 특성</h2>
+            
+            <div class="equation-box">
+                $Re = \frac{\rho u_0 L}{\mu} = \frac{u_0 L}{\nu}$
+            </div>
+            
+            <div class="highlight">
+                <strong>레이놀즈 수 (Reynolds Number)의 의미:</strong>
+                <p>\(Re = \frac{\text{관성력}}{\text{점성력}}\)</p>
+            </div>
+            
+            <table>
+                <tr>
+                    <th>Re 범위</th>
+                    <th>흐름 특성</th>
+                    <th>지배 방정식</th>
+                    <th>해의 형태</th>
+                </tr>
+                <tr>
+                    <td>Re ≪ 1</td>
+                    <td>층류 (Creeping Flow)</td>
+                    <td>Stokes 방정식</td>
+                    <td>정상 상태 포물선</td>
+                </tr>
+                <tr>
+                    <td>1 < Re < 2300</td>
+                    <td>층류 (Laminar)</td>
+                    <td>선형화된 NS</td>
+                    <td>감쇠하는 파동</td>
+                </tr>
+                <tr>
+                    <td>2300 < Re < 4000</td>
+                    <td>천이 (Transition)</td>
+                    <td>약한 비선형 NS</td>
+                    <td>불안정 성장 시작</td>
+                </tr>
+                <tr>
+                    <td>Re > 4000</td>
+                    <td>난류 (Turbulent)</td>
+                    <td>완전 비선형 NS</td>
+                    <td>혼돈적 운동</td>
+                </tr>
+            </table>
+            
+            <div class="note">
+                <strong>🔬 실제 예시:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>꿀 흐름:</strong> Re ≈ 0.01 → Stokes 흐름</li>
+                    <li><strong>수도꼭지:</strong> Re ≈ 2000 → 층류</li>
+                    <li><strong>강물:</strong> Re ≈ 10,000 → 난류</li>
+                    <li><strong>비행기:</strong> Re ≈ 10⁷ → 완전 난류</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 7. 감쇠율 분석 -->
+        <div class="section">
+            <h2>7️⃣ 감쇠율 상세 분석</h2>
+            
+            <h3>감쇠 시상수</h3>
+            <div class="equation-box">
+                $\tau = \frac{1}{\nu k^2} = \frac{1}{\nu(k_x^2 + k_y^2 + k_z^2)}$
+            </div>
+            
+            <div class="step">
+                <span class="step-number">📉</span>
+                <strong>파장에 따른 감쇠 속도</strong>
+                <p>파수 \(k = 2\pi/\lambda\)이므로 (λ: 파장):</p>
+                <div class="equation-box">
+                    $\tau \propto \lambda^2$
+                </div>
+                <p><strong>결론:</strong> 짧은 파장(작은 소용돌이)일수록 빨리 사라집니다!</p>
+            </div>
+            
+            <div class="highlight">
+                <strong>에너지 스펙트럼:</strong>
+                <p>난류에서 에너지는 큰 소용돌이에서 작은 소용돌이로 전달되고 (에너지 캐스케이드), 가장 작은 스케일에서 점성으로 소산됩니다.</p>
+                <div class="equation-box">
+                    $E(k) \propto k^{-5/3} \quad \text{(Kolmogorov 스펙트럼)}$
+                </div>
+            </div>
+            
+            <h3>감쇠 과정 시각화</h3>
+            <div style="background: white; padding: 20px; border-radius: 8px;">
+                <p style="text-align: center;"><strong>t = 0</strong></p>
+                <div style="text-align: center; font-size: 1.5em; margin: 10px 0;">
+                    🌊🌊🌊🌊🌊 (큰 파동 + 작은 파동)
+                </div>
+                
+                <p style="text-align: center; margin-top: 20px;"><strong>t = τ_작은파/4</strong></p>
+                <div style="text-align: center; font-size: 1.5em; margin: 10px 0;">
+                    🌊🌊🌊🌊 (작은 파동 감쇠 시작)
+                </div>
+                
+                <p style="text-align: center; margin-top: 20px;"><strong>t = τ_작은파</strong></p>
+                <div style="text-align: center; font-size: 1.5em; margin: 10px 0;">
+                    🌊🌊 (작은 파동 거의 소멸)
+                </div>
+                
+                <p style="text-align: center; margin-top: 20px;"><strong>t = τ_큰파</strong></p>
+                <div style="text-align: center; font-size: 1.5em; margin: 10px 0;">
+                    ~ (모든 파동 소멸)
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. 정리 및 요약 -->
+        <div class="section" style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border: 3px solid #667eea;">
+            <h2>8️⃣ 전체 정리 및 요약</h2>
+            
+            <h3>🎯 핵심 결과</h3>
+            <div class="equation-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                $\boxed{u(x,y,t) = A \sin(k_y y) \exp[i(k_x x - k_x u_0 t)] \exp[-\nu k^2 t]}$
+            </div>
+            
+            <div class="step">
+                <strong>이 해가 설명하는 현상:</strong>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>공간 진동:</strong> \(\sin(k_y y)\) - y 방향으로 물결 무늬</li>
+                    <li><strong>전파:</strong> \(e^{ik_x(x - u_0 t)}\) - 평균 속도로 이동</li>
+                    <li><strong>감쇠:</strong> \(e^{-\nu k^2 t}\) - 점성으로 에너지 소실</li>
+                </ol>
+            </div>
+            
+            <h3>📚 각 방정식의 기여</h3>
+            <table>
+                <tr>
+                    <th>방정식</th>
+                    <th>제거 항</th>
+                    <th>주요 결과</th>
+                    <th>물리적 의미</th>
+                </tr>
+                <tr>
+                    <td>Euler</td>
+                    <td>점성</td>
+                    <td>\(u \propto t\)</td>
+                    <td>무한 가속</td>
+                </tr>
+                <tr>
+                    <td>Stokes</td>
+                    <td>관성</td>
+                    <td>\(u \propto y(h-y)\)</td>
+                    <td>정상 흐름</td>
+                </tr>
+                <tr>
+                    <td>Momentum</td>
+                    <td>외력</td>
+                    <td>\(u \propto e^{-\lambda t}\)</td>
+                    <td>자유 감쇠</td>
+                </tr>
+                <tr>
+                    <td>선형 대류</td>
+                    <td>비선형</td>
+                    <td>\(u \propto e^{ik_x u_0 t}\)</td>
+                    <td>파동 전파</td>
+                </tr>
+                <tr>
+                    <td>Helmholtz</td>
+                    <td>-</td>
+                    <td>\(p \propto \nabla\phi\)</td>
+                    <td>압력 계산</td>
+                </tr>
+            </table>
+            
+            <h3>💡 실용적 의미</h3>
+            <div class="highlight">
+                <p><strong>이 해석 해는 다음에 사용됩니다:</strong></p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>✈️ <strong>항공역학:</strong> 날개 주변 유동 안정성 분석</li>
+                    <li>🌡️ <strong>열전달:</strong> 대류 열교환 최적화</li>
+                    <li>🏭 <strong>화학공학:</strong> 반응기 내 혼합 효율</li>
+                    <li>🌊 <strong>해양학:</strong> 파랑 감쇠 예측</li>
+                    <li>💻 <strong>CFD:</strong> 수치해석 검증용 벤치마크</li>
+                </ul>
+            </div>
+            
+            <div class="note">
+                <strong>⚠️ 한계점:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>선형화로 인해 <strong>작은 섭동</strong>에만 유효</li>
+                    <li>완전한 난류는 설명 불가 (비선형 효과 필수)</li>
+                    <li>경계층, 박리 등 복잡한 현상은 수치해석 필요</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 9. 참고자료 및 더 공부하기 -->
+        <div class="section">
+            <h2>9️⃣ 더 깊이 공부하려면</h2>
+            
+            <h3>📖 추천 도서</h3>
+            <ul style="margin-left: 20px;">
+                <li><strong>입문:</strong> "Fluid Mechanics" - Frank M. White</li>
+                <li><strong>중급:</strong> "Introduction to Fluid Mechanics" - Fox & McDonald</li>
+                <li><strong>고급:</strong> "Viscous Fluid Flow" - Frank M. White</li>
+                <li><strong>수학:</strong> "Partial Differential Equations" - Lawrence C. Evans</li>
+            </ul>
+            
+            <h3>🔬 다음 단계</h3>
+            <div class="process-flow">
+                <div class="process-step">
+                    <strong>1단계</strong>
+                    <p>선형 안정성 이론</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="process-step">
+                    <strong>2단계</strong>
+                    <p>약한 비선형 해석</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="process-step">
+                    <strong>3단계</strong>
+                    <p>난류 모델링</p>
+                </div>
+            </div>
+            
+            <h3>💻 수치 시뮬레이션</h3>
+            <p>이론을 실제로 확인하려면:</p>
+            <ul style="margin-left: 20px;">
+                <li><strong>Python:</strong> NumPy + SciPy로 1D 풀이</li>
+                <li><strong>MATLAB:</strong> PDE Toolbox 활용</li>
+                <li><strong>OpenFOAM:</strong> 3D CFD 시뮬레이션</li>
+                <li><strong>COMSOL:</strong> 멀티피직스 해석</li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #667eea; color: #666;">
+            <p><strong>작성:</strong> 2025년 10월 17일</p>
+            <p>나비에-스토크스 방정식의 아름다움을 탐구하는 여정은 계속됩니다 🌊</p>
+        </div>
+    </div>
+</body>
+</html>
