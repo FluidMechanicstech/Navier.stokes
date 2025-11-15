@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>맥스웰 → 이중슬릿 → N-S 전환 시뮬레이션</title>
+
+<!-- MathJax -->
+<script>
+MathJax = {
+  tex: {inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$']]}
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<!-- Chart.js for simulation -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
+h1, h2, h3 { color: #333; }
+code { background: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+.section { margin-bottom: 50px; }
+canvas { background: #f9f9f9; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+
+<h1>맥스웰 방정식 → 이중슬릿 → 나비에-스토크스 치환</h1>
+
+<div class="section">
+<h2>1. 나비에-스토크스 방정식 (5항)</h2>
+
+$$
+\rho \left( \frac{\partial \mathbf u}{\partial t} + (\mathbf u\cdot\nabla)\mathbf u \right) 
+= -\nabla p + \mu \nabla^2 \mathbf u + \mathbf f
+$$
+
+- $\mathbf u=(u,v,w)$: 유체 속도  
+- $\rho$: 밀도, $\mu$: 점성계수  
+- $\mathbf f$: 외력 (전자기 포함)
+</div>
+
+<div class="section">
+<h2>2. 맥스웰 방정식과 이중슬릿 치환</h2>
+
+<h3>맥스웰 4식</h3>
+$$
+\nabla\cdot \mathbf E = \frac{\rho_e}{\varepsilon_0}, \quad
+\nabla\cdot \mathbf B = 0
+$$
+$$
+\nabla\times \mathbf E = -\frac{\partial \mathbf B}{\partial t}, \quad
+\nabla\times \mathbf B = \mu_0 \mathbf J + \mu_0 \varepsilon_0 \frac{\partial \mathbf E}{\partial t}
+$$
+
+<h3>이중슬릿 전계</h3>
+$$
+\mathbf E_{\text{slit}}(\mathbf r, t) = \Re\left\{ A(\theta) (e^{i\phi_1}+e^{i\phi_2}) e^{-i \omega t} \hat{\mathbf e} \right\}
+$$
+$$
+\mathbf B_{\text{slit}} \approx \frac{1}{c} \hat{\mathbf k} \times \mathbf E_{\text{slit}}
+$$
+여기서 $A(\theta) = \text{sinc}(a k \sin\theta)$, $\Delta \phi = k d \sin\theta$.
+</div>
+
+<div class="section">
+<h2>3. N-S 각 항과 맥스웰 치환</h2>
+
+<table border="1" cellpadding="5">
+<tr><th>N-S 항</th><th>대응 맥스웰 항</th><th>치환 수식</th></tr>
+<tr>
+<td>시간항 $\rho \partial_t \mathbf u$</td>
+<td>패러데이 법칙 $\nabla \times \mathbf E = -\partial_t \mathbf B$</td>
+<td>
+$\partial_t \mathbf u \rightarrow \varepsilon_0 \partial_t \mathbf E_{\text{slit}}$
+</td>
+</tr>
+<tr>
+<td>대류항 $\rho (\mathbf u \cdot \nabla) \mathbf u$</td>
+<td>앰페어-맥스웰 법칙 $\nabla \times \mathbf B = \mu_0 \mathbf J + \mu_0 \varepsilon_0 \partial_t \mathbf E$</td>
+<td>
+$(\mathbf u \cdot \nabla) \mathbf u \rightarrow \frac{1}{\mu_0} (\nabla \times \mathbf B_{\text{slit}}) \times \mathbf B_{\text{slit}}$
+</td>
+</tr>
+<tr>
+<td>압력항 $-\nabla p$</td>
+<td>가우스 전기 $\nabla \cdot \mathbf E = \rho_e / \varepsilon_0$</td>
+<td>
+$-\nabla p \rightarrow -\nabla (\varepsilon_0 (\nabla \cdot \mathbf E_{\text{slit}}))$
+</td>
+</tr>
+<tr>
+<td>점성항 $\mu \nabla^2 \mathbf u$</td>
+<td>가우스 자기 $\nabla \cdot \mathbf B = 0$</td>
+<td>
+$\mu \nabla^2 \mathbf u \rightarrow \mu \nabla^2 \mathbf B_{\text{slit}}$
+</td>
+</tr>
+<tr>
+<td>외력항 $\mathbf f$</td>
+<td>로렌츠 힘 / 이중슬릿</td>
+<td>
+$\mathbf f \rightarrow \varepsilon_0 (\nabla \cdot \mathbf E_{\text{slit}}) \mathbf E_{\text{slit}} + [\frac{1}{\mu_0} (\nabla \times \mathbf B_{\text{slit}}) - \varepsilon_0 \partial_t \mathbf E_{\text{slit}}] \times \mathbf B_{\text{slit}}$
+</td>
+</tr>
+</table>
+</div>
+
+<div class="section">
+<h2>4. 편미분 예시 (x방향)</h2>
+
+$$
+\partial_x (\rho \partial_t u) = \rho \frac{\partial^2 u}{\partial x \partial t} \approx \rho \varepsilon_0 \frac{\partial^2 E_x}{\partial x \partial t}
+$$
+
+$$
+\partial_x (\rho (u\partial_x u + v \partial_y u + w \partial_z u)) \approx \rho \partial_x \left[ \frac{1}{\mu_0} (\nabla \times \mathbf B_{\text{slit}}) \times \mathbf B_{\text{slit}} \right]
+$$
+
+$$
+\partial_x(-\nabla p) \approx - \partial_x \nabla (\varepsilon_0 (\nabla \cdot \mathbf E_{\text{slit}}))
+$$
+
+$$
+\partial_x (\mu \nabla^2 u) \approx \mu \nabla^2 (\partial_x B_x)
+$$
+
+$$
+\partial_x \mathbf f_x \approx \partial_x \left[ \varepsilon_0 (\nabla \cdot \mathbf E_{\text{slit}}) E_x + \left(\frac{1}{\mu_0} (\nabla \times \mathbf B_{\text{slit}}) - \varepsilon_0 \partial_t \mathbf E_{\text{slit}} \right) \times \mathbf B_{\text{slit}} \right]_x
+$$
+</div>
+
+<div class="section">
+<h2>5. 간단한 이중슬릿 시뮬레이션</h2>
+<canvas id="slitChart" width="800" height="400"></canvas>
+
+<script>
+const ctx = document.getElementById('slitChart').getContext('2d');
+
+// x 위치 배열
+const N = 200;
+const xData = [];
+const intensity = [];
+for(let i=0;i<N;i++){
+    let x = -2*Math.PI + i*4*Math.PI/N;
+    xData.push(x.toFixed(2));
+    let a=0.5, d=1, k=2*Math.PI; // 예시 값
+    let E = Math.sin(a*k*x)/(a*k*x)||1; // sinc 근사
+    let pattern = 2*E*Math.cos(k*d*x/2); // 2슬릿 interference
+    intensity.push(pattern*pattern);
+}
+
+new Chart(ctx,{
+    type:'line',
+    data:{
+        labels:xData,
+        datasets:[{
+            label:'이중슬릿 전계 강도 |E(x)|^2',
+            data:intensity,
+            borderColor:'blue',
+            fill:false,
+        }]
+    },
+    options:{
+        responsive:true,
+        scales:{
+            x:{title:{display:true,text:'x'}},
+            y:{title:{display:true,text:'Intensity'}}
+        }
+    }
+});
+</script>
+</div>
+
+</body>
+</html>
